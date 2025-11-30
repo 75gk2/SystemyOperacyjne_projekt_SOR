@@ -1,5 +1,5 @@
-| Systemy Operacyjne - _PROJEKT_ | Kamil Gargula | GR_01, II rok, st. stacjonarne | Semestr zimowy 2025/26 |
-| :----------------------------- | :------------ | :----------------------------- | :--------------------- |
+| Systemy Operacyjne - _PROJEKT_ | Kamil Gargula | GR_01, II rok, st. stacjonarne | Semestr zimowy 2025/26 | [GitHub repo](https://github.com/75gk2/SystemyOperacyjne_projekt_SOR) |
+| :----------------------------- | :------------ | :----------------------------- | :--------------------- | :-------------------------------------------------------------------- |
 
 # Propozycje na testy - werja robocza, TBD
 
