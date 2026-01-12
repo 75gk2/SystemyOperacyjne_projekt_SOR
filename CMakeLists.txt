@@ -31,7 +31,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 #option(BUILD_TESTS "Build tests" ON)
 
 # Subprojects
-#add_subdirectory(lib)
+add_subdirectory(lib)
 add_subdirectory(app)
 #if(BUILD_TESTS)
 #    enable_testing()
