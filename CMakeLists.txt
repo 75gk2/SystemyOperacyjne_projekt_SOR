@@ -7,9 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Default build type when not provided by the generator
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
-endif()
+endif ()
 
 # Common warnings and diagnostics
 add_compile_options(-Wall -Wextra)
@@ -29,6 +29,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # Option to enable/disable tests
 #option(BUILD_TESTS "Build tests" ON)
+
+# Logger
+include(FetchContent)
+
+FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.11.0
+)
+FetchContent_MakeAvailable(spdlog)
 
 # Subprojects
 add_subdirectory(lib)

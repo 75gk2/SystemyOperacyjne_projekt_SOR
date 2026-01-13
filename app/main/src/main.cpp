@@ -1,10 +1,11 @@
 #include <cstdio>
 
 #include "constants.h"
-
+#include "utils.hpp"
 
 int main() {
-    printf("Initializing program...\n");
+    logging::init();
+    _LOG->info("MAIN: Initializing program");
     printf("Ile miejsc: %d\n", POCZEKALNIA_SIZE);
     return 0;
 }
