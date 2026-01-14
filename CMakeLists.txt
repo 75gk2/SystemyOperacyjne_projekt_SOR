@@ -28,7 +28,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # Option to enable/disable tests
-#option(BUILD_TESTS "Build tests" ON)
+option(BUILD_TESTS "Build tests" ON)
 
 # Logger
 include(FetchContent)
@@ -43,10 +43,10 @@ FetchContent_MakeAvailable(spdlog)
 # Subprojects
 add_subdirectory(lib)
 add_subdirectory(app)
-#if(BUILD_TESTS)
-#    enable_testing()
-#    add_subdirectory(test)
-#endif()
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Output directory: ${CMAKE_BINARY_DIR}")
