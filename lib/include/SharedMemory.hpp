@@ -1,17 +1,18 @@
 #pragma once
 #include "DataSOR.h"
 
-// !TODO: test this feature before implementing usage
 class SharedMemory {
-private:
-    int shmID;
-    DataSOR *ptr;
-    bool isPtrNegative() const;
-
 public:
-    explicit SharedMemory(const char *path);
+    explicit SharedMemory(bool isCreator = false);
 
     ~SharedMemory();
 
     DataSOR *getPtr() const;
+
+private:
+    int shmID;
+    bool isThisCreator;
+    DataSOR *ptr;
+
+    bool isPtrNegative() const;
 };
