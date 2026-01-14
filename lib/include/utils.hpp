@@ -1,8 +1,10 @@
 #pragma once
 #include "spdlog/spdlog.h"
 
-namespace logging {
-    void init();
-}
+struct LoggerInitializer {
+    LoggerInitializer();
+};
+
+inline LoggerInitializer loggerInit;
 
 #define _LOG spdlog::get("console")

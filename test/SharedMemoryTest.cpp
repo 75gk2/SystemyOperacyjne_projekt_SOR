@@ -5,7 +5,6 @@
 
 
 TEST_CASE("SharedMemory create/assign and share data ", "[sharedmemory]") {
-    logging::init();
     SharedMemory shm{true};
 
     //assign sth
