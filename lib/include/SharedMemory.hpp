@@ -1,17 +1,17 @@
 #pragma once
 #include "DataSOR.h"
+#include "GenericIPC.hpp"
 
-class SharedMemory {
+class SharedMemory:GenericIPC {
 public:
     explicit SharedMemory(bool isCreator = false);
 
-    ~SharedMemory();
+    ~SharedMemory() override;
 
     DataSOR *getPtr() const;
 
 private:
     int shmID;
-    bool isThisCreator;
     DataSOR *ptr;
 
     bool isPtrNegative() const;

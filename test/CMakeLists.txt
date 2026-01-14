@@ -11,7 +11,8 @@ FetchContent_MakeAvailable(Catch2)
 
 file(GLOB TEST_SOURCES *.cpp)
 
-add_executable(sor_tests ${TEST_SOURCES})
+add_executable(sor_tests ${TEST_SOURCES}
+        SemaphoreArrayTest.cpp)
 
 
 target_link_libraries(sor_tests PRIVATE sorLib)
