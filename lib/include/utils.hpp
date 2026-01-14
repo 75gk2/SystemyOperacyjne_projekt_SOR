@@ -7,4 +7,4 @@ struct LoggerInitializer {
 
 inline LoggerInitializer loggerInit;
 
-#define _LOG spdlog::get("console")
+#define LOG spdlog::get("console")
