@@ -8,34 +8,34 @@
 
 SemaphoreArray::SemaphoreArray(bool isCreator)
     : GenericIPC(isCreator), semID(-1), SEM_COUNT(static_cast<int>(SEM_TYPE::__COUNT_SENTINEL)) {
-    _LOG->info("SemaphoreArray: init, isCreator={}", isCreator);
+    LOG->info("SemaphoreArray: init, isCreator={}", isCreator);
 
     const key_t key = ftok(".", SEM_PROJ_ID);
     if (key == -1) {
-        _LOG->error("SemaphoreArray: ftok failed");
+        LOG->error("SemaphoreArray: ftok failed");
         throw std::runtime_error("ftok failed");
     }
 
     semID = semget(key, SEM_COUNT, getFlag());
 
     if (semID == -1) {
-        _LOG->error("SemaphoreArray: semget failed");
+        LOG->error("SemaphoreArray: semget failed");
         throw std::runtime_error("semget failed");
     }
 
-    _LOG->info("SemaphoreArray: init compleated! key={}, semID={}", key, semID);
+    LOG->info("SemaphoreArray: init compleated! key={}, semID={}", key, semID);
 }
 
 SemaphoreArray::~SemaphoreArray() {
     if (isThisCreator()) {
-        _LOG->info("SemaphoreArray: destructor of creator, deleting semaphores semID={}", semID);
+        LOG->info("SemaphoreArray: destructor of creator, deleting semaphores semID={}", semID);
         if (semID != -1) {
             if (const auto result = semctl(semID, 0, IPC_RMID); result == -1) {
-                _LOG->error("SemaphoreArray: deletion of semaphore array failed! RISK OF LEAK! semID={}", semID);
+                LOG->error("SemaphoreArray: deletion of semaphore array failed! RISK OF LEAK! semID={}", semID);
             }
             semID = -1;
         } else {
-            _LOG->error("SemaphoreArray: Owner lost access to semID!");
+            LOG->error("SemaphoreArray: Owner lost access to semID!");
         }
     }
 }
@@ -43,7 +43,7 @@ SemaphoreArray::~SemaphoreArray() {
 template<int N>
 bool SemaphoreArray::operate(struct sembuf (&sops)[N]) const{
     if (semop(semID, sops, N) == -1) {
-        _LOG->error("SemaphoreArray: operate (atomic) semop failed!");
+        LOG->error("SemaphoreArray: operate (atomic) semop failed!");
         return false;
     }
     return true;
@@ -56,7 +56,7 @@ bool SemaphoreArray::pullUp(SEM_TYPE semNum, const unsigned short int byN) const
     sops[0].sem_flg = 0;
 
     if (!operate(sops)) {
-        _LOG->error("SemaphoreArray: pullUp semop failed!");
+        LOG->error("SemaphoreArray: pullUp semop failed!");
         return false;
     }
     return true;
@@ -69,7 +69,7 @@ bool SemaphoreArray::pullDown(SEM_TYPE semNum, const unsigned short int byN) con
     sops[0].sem_flg = 0;
 
     if (!operate(sops)) {
-        _LOG->error("SemaphoreArray: pullDown semop failed!");
+        LOG->error("SemaphoreArray: pullDown semop failed!");
         return false;
     }
     return true;
