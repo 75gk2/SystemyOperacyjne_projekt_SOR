@@ -9,3 +9,29 @@
 #define SHM_PROJ_ID 'M'
 #define SEM_PROJ_ID 'S'
 #define MSG_PROJ_ID 'Q'
+
+enum class ProcessType {
+    LEKARZ,
+    REJESTRACJA,
+    PACJENT,
+    POCZEKALNIA,
+    TEST
+    // __COUNT_SENTINEL
+};
+
+inline const char* getProcessExecPath(const ProcessType type) {
+    switch (type) {
+        case ProcessType::LEKARZ:
+            return "/lekarz";
+        case ProcessType::REJESTRACJA:
+            return "/rejestracja";
+        case ProcessType::PACJENT:
+            return "/pacjent";
+        case ProcessType::POCZEKALNIA:
+            return "/poczekalnia";
+        case ProcessType::TEST:
+            return DOOM_PATH;
+        default:
+            return nullptr;
+    }
+};
