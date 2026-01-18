@@ -8,6 +8,7 @@
 class Process {
 private:
     pid_t pid;
+    void printThreadSafeError(const char *msg, const char *subProcessPath);
 
 protected:
     [[nodiscard]] pid_t getPid() const;

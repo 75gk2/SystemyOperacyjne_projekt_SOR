@@ -11,6 +11,7 @@ add_library(sorLib STATIC
         src/SemaphoreArray.cpp
         include/Process.h
         src/Process.cpp
+        include/ProcessManager.hpp
 )
 
 target_include_directories(sorLib PUBLIC include)

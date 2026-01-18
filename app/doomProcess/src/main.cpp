@@ -1,5 +1,9 @@
+#include <unistd.h>
+
 #include "utils.hpp"
 
 int main(int argc, char *argv[]) {
-    LOG->info("DOOM PROCESS ACTIVE");
+    spdlog::info("DOOM PROCESS ACTIVE111");
+    sleep(5);
+    spdlog::info("Doom process exited");
 }

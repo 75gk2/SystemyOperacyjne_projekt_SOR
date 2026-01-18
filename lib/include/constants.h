@@ -15,8 +15,8 @@ enum class ProcessType {
     REJESTRACJA,
     PACJENT,
     POCZEKALNIA,
-    TEST
-    // __COUNT_SENTINEL
+    TEST,
+    __COUNT_SENTINEL
 };
 
 inline const char* getProcessExecPath(const ProcessType type) {
