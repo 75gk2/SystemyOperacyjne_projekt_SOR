@@ -9,9 +9,10 @@ add_library(sorLib STATIC
         include/GenericIPC.hpp
         src/GenericIPC.cpp
         src/SemaphoreArray.cpp
-        include/Process.h
+        include/Process.hpp
         src/Process.cpp
         include/ProcessManager.hpp
+        src/ProcessManager.cpp
 )
 
 target_include_directories(sorLib PUBLIC include)
