@@ -2,6 +2,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <bits/stl_vector.h>
 
 #include "Process.hpp"
 
@@ -9,6 +10,8 @@
 class ProcessManager {
 public:
     static void sigchldHandler(int sig);
+
+    std::vector<pid_t> getPidsOfProcesses() const;
     // static ProcessManager* GLOBAL_PROCESS_MANAGER;
     // static std::mutex GLOBAL_PROCESS_MANAGER_MUTEX;
 

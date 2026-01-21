@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <mutex>
 #include <spdlog/spdlog.h>
-static ProcessManager* GLOBAL_PROCESS_MANAGER;
+static ProcessManager *GLOBAL_PROCESS_MANAGER;
 static std::mutex GLOBAL_PROCESS_MANAGER_MUTEX;
 
 //global func for whole project
@@ -19,6 +19,16 @@ void ProcessManager::sigchldHandler(int sig) {
         std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
         GLOBAL_PROCESS_MANAGER->removeProcess(child_pid);
     }
+}
+
+std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
+    std::vector<pid_t> keys;
+    keys.reserve(processList.size());
+
+    for (const auto &kv: processList) {
+        keys.push_back(kv.first);
+    }
+    return keys;
 }
 
 
@@ -41,9 +51,22 @@ ProcessManager::ProcessManager() {
 ProcessManager::~ProcessManager() {
     std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
 
+    spdlog::info("ProcessManager: Terminating processes number={}",processList.size());
+    // Kill all child processes
+
+
+    signal(SIGCHLD, SIG_DFL);
+
     for (auto &[pid, process]: processList) {
         spdlog::info("ProcessManager: Terminating process with pid={}", pid);
+        kill(pid, SIGTERM);
     }
+
+    int status;
+    for (auto &[pid, process]: processList) {
+        waitpid(pid, &status, 0); // blocking wait
+    }
+
     processList.clear();
 
     signal(SIGCHLD, SIG_DFL);

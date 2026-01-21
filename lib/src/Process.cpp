@@ -15,22 +15,21 @@ pid_t Process::isManaged() const {
     return this->status > UNMANAGED;
 }
 
-Process::Process(ProcessType processType): status(UNMANAGED) {
-    path=getProcessExecPath(processType);
+Process::Process(ProcessType processType) : status(UNMANAGED) {
+    path = getProcessExecPath(processType);
 }
 
 Process::~Process() {
-    spdlog::info("Process: Destructor called, pid={}", pid);
-
     if (pid > 0) {
+        spdlog::info("Process: Destructing process, pid={}", pid);
         kill(pid, SIGTERM);
-        waitpid(pid, nullptr, 0);
+    } else {
+        spdlog::info("Process: Destructor ended, no pid={}", pid);
     }
-    spdlog::info("Process: Destructor ended, pid={}", pid);
 }
 
 bool Process::assignToManager() {
-    if (isManaged() ) return false;
+    if (isManaged()) return false;
     this->status = MANAGED;
     return true;
 }

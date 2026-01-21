@@ -10,13 +10,15 @@ int main() {
     spdlog::info("MAIN: path={}",DOOM_PATH);
 
     ProcessManager pm;
-    auto process = std::make_unique<Process>(ProcessType::TEST);
-    if (pm.assignProcess(std::move(process))) {
-        spdlog::info("MAIN: Process initialized");
+    for (int i = 1; i <= 10000; i++) {
+        if (pm.assignProcess(std::make_unique<Process>(ProcessType::TEST))) {
+            spdlog::info("→Runn test");
+        }
     }
-sleep(4);
-
     
     // ProcessManager automatycznie posprzata procesy w destruktorze
+    pm.~ProcessManager();
+    sleep(60); //czekaj na sprawdzenie zombie procesow
+
     return 0;
 }
