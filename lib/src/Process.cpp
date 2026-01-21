@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <csignal>
+#include <spdlog/spdlog.h>
 
 pid_t Process::getPid() const {
     return pid;
@@ -20,11 +21,13 @@ Process::Process(ProcessType processType) : status(UNMANAGED) {
 }
 
 Process::~Process() {
-    if (pid > 0) {
-        spdlog::info("Process: Destructing process, pid={}", pid);
+    if (pid > 0 && status == RUNNING) {
+        spdlog::info("Process: Terminating process with pid={}", pid);
         kill(pid, SIGTERM);
-    } else {
-        spdlog::info("Process: Destructor ended, no pid={}", pid);
+        
+        int status;
+        waitpid(pid, &status, 0); // blocking wait
+        spdlog::info("Process: Process with pid={} terminated", pid);
     }
 }
 

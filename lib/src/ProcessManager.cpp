@@ -10,12 +10,16 @@ static std::mutex GLOBAL_PROCESS_MANAGER_MUTEX;
 
 //global func for whole project
 void ProcessManager::sigchldHandler(int sig) {
-    if (GLOBAL_PROCESS_MANAGER == nullptr) return;
-
+    if (GLOBAL_PROCESS_MANAGER == nullptr) {
+        printThreadSafeLog("[CRITICAL]: PM sigchildHandler got event, but no PM defined!", true, "");
+        return;
+    }
     pid_t child_pid;
     int status;
 
     while ((child_pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        printThreadSafeLog("SIGCHLD handler: Child process terminated", false,std::to_string(child_pid).c_str());
+
         std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
         GLOBAL_PROCESS_MANAGER->removeProcess(child_pid);
     }
@@ -49,27 +53,17 @@ ProcessManager::ProcessManager() {
 }
 
 ProcessManager::~ProcessManager() {
+    // Disable SIGCHLD handler first to prevent concurrent modification during cleanup
+    signal(SIGCHLD, SIG_DFL);
+    
     std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
 
-    spdlog::info("ProcessManager: Terminating processes number={}",processList.size());
-    // Kill all child processes
+    spdlog::info("ProcessManager: Terminating processes number={}", processList.size());
 
-
-    signal(SIGCHLD, SIG_DFL);
-
-    for (auto &[pid, process]: processList) {
-        spdlog::info("ProcessManager: Terminating process with pid={}", pid);
-        kill(pid, SIGTERM);
-    }
-
-    int status;
-    for (auto &[pid, process]: processList) {
-        waitpid(pid, &status, 0); // blocking wait
-    }
-
+    // Clear the process list, which will call Process destructors
+    // Each Process destructor will kill and wait for its process
     processList.clear();
 
-    signal(SIGCHLD, SIG_DFL);
     GLOBAL_PROCESS_MANAGER = nullptr;
 
     spdlog::info("ProcessManager: Destroyed");
@@ -86,7 +80,7 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
 
         case 0: {
             execl(process->path, process->path, static_cast<char *>(nullptr));
-            printThreadSafeError("Forked process: execl failed for process", process->path);
+            printThreadSafeLog("Forked process: execl failed for process", true, process->path);
 
             //return without calling any copied destructors
             _exit(EXIT_FAILURE);
@@ -108,20 +102,21 @@ void ProcessManager::removeProcess(pid_t pid) {
 }
 
 
-void ProcessManager::printThreadSafeError(const char *msg, const char *subProcessPath = "") {
+void ProcessManager::printThreadSafeLog(const char *msg, bool isError = true, const char *subProcessPath = "") {
     auto timeIs = std::chrono::system_clock::to_time_t(
         std::chrono::system_clock::now());
 
     tm tm{};
     localtime_r(&timeIs, &tm);
     fprintf(
-        stderr,
-        "↓--→[%02d:%02d:%02d] [PID %d] [error] %s path=%s\n",
+        isError ? stderr : stdout,
+        "↓--→[%02d:%02d:%02d] [PID %d] [%s] %s path=%s\n",
         tm.tm_hour,
         tm.tm_min,
         tm.tm_sec,
         // tm.tm_
         getpid(),
+        isError ? "ERROR" : "INFO",
         msg,
         subProcessPath
     );

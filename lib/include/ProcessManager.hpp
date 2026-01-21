@@ -18,10 +18,10 @@ public:
     ProcessManager();
     ~ProcessManager();
 
-    bool assignProcess(std::unique_ptr<Process> process);
+    [[nodiscard]] bool assignProcess(std::unique_ptr<Process> process);
     void removeProcess(pid_t pid);
 
 private:
     std::unordered_map<pid_t, std::unique_ptr<Process>> processList;
-    static void printThreadSafeError(const char *msg, const char *subProcessPath);
+    static void printThreadSafeLog(const char *msg, bool isError, const char *subProcessPath);
 };
