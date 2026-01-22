@@ -13,6 +13,9 @@ add_library(sorLib STATIC
         src/Process.cpp
         include/ProcessManager.hpp
         src/ProcessManager.cpp
+        include/MessageQueue.hpp
+        include/MessageQueue.tpp
+        src/MessageQueue.cpp
 )
 
 target_include_directories(sorLib PUBLIC include)

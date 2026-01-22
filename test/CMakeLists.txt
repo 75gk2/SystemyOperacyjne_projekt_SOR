@@ -13,7 +13,8 @@ file(GLOB TEST_SOURCES *.cpp)
 
 add_executable(sor_tests ${TEST_SOURCES}
         SemaphoreArrayTest.cpp
-        ProcessTest.cpp)
+        ProcessTest.cpp
+        MessageQueueTest.cpp)
 
 #target_link_libraries(sor_tests PRIVATE app)
 target_link_libraries(sor_tests PRIVATE sorLib)

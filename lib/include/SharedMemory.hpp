@@ -8,11 +8,11 @@ public:
 
     ~SharedMemory() override;
 
-    DataSOR *getPtr() const;
+    [[nodiscard]] DataSOR *getPtr() const;
 
 private:
     int shmID;
     DataSOR *ptr;
 
-    bool isPtrNegative() const;
+    [[nodiscard]] bool isPtrNegative() const;
 };

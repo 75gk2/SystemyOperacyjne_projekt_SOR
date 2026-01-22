@@ -81,7 +81,7 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
         case 0: {
             execl(process->path, process->path, static_cast<char *>(nullptr));
             printThreadSafeLog("Forked process: execl failed for process", true, process->path);
-
+            // TODO! : Make sure that result of this process is HANDLED by parent process to avoid zombie
             //return without calling any copied destructors
             _exit(EXIT_FAILURE);
         }
