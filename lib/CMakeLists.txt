@@ -1,7 +1,7 @@
 add_library(sorLib STATIC
         src/utils.cpp
         src/DataSOR.cpp
-        include/DataSOR.h
+        include/DataSOR.hpp
         include/SharedMemory.hpp
         src/SharedMemory.cpp
         include/utils.hpp
@@ -21,3 +21,4 @@ add_library(sorLib STATIC
 target_include_directories(sorLib PUBLIC include)
 target_link_libraries(sorLib PUBLIC spdlog::spdlog)
 target_link_libraries(sorLib PRIVATE global_config)
+target_link_libraries(sorLib PRIVATE test_config)

@@ -11,16 +11,28 @@ FetchContent_MakeAvailable(Catch2)
 
 file(GLOB TEST_SOURCES *.cpp)
 
+add_executable(doomProcess ./doomProcess/src/main.cpp)
+target_link_libraries(doomProcess PRIVATE sorLib)
+
+add_library(test_config INTERFACE)
+target_compile_definitions(test_config INTERFACE
+        DOOM_PATH="$<TARGET_FILE:doomProcess>")
+
+
 add_executable(sor_tests ${TEST_SOURCES}
         SemaphoreArrayTest.cpp
         ProcessTest.cpp
-        MessageQueueTest.cpp)
+        MessageQueueTest.cpp
+        PathResolvingTest.cpp)
 
 #target_link_libraries(sor_tests PRIVATE app)
 target_link_libraries(sor_tests PRIVATE sorLib)
 target_link_libraries(sor_tests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(sor_tests PRIVATE global_config)
+target_link_libraries(sor_tests PRIVATE test_config)
 
 
 include(Catch)
 catch_discover_tests(sor_tests)
+
+
