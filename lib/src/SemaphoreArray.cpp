@@ -3,7 +3,7 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
-#include "constants.h"
+#include "constants.hpp"
 #include "utils.hpp"
 
 SemaphoreArray::SemaphoreArray(bool isCreator)

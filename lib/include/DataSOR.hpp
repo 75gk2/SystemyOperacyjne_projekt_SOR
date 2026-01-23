@@ -2,7 +2,7 @@
 #include <array>
 #include <bits/types.h>
 
-#include "constants.h"
+#include "constants.hpp"
 
 class DataSOR {
 public:

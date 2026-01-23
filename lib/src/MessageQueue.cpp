@@ -3,7 +3,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#include "constants.h"
+#include "constants.hpp"
 #include "spdlog/spdlog.h"
 
 MessageQueue::MessageQueue(const char queueId, bool isCreator)

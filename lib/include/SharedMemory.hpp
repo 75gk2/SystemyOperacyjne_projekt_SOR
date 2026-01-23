@@ -1,5 +1,5 @@
 #pragma once
-#include "DataSOR.h"
+#include "DataSOR.hpp"
 #include "GenericIPC.hpp"
 
 class SharedMemory:GenericIPC {
