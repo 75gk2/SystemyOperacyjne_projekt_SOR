@@ -49,7 +49,7 @@ ProcessManager::ProcessManager() {
         throw std::runtime_error("Failed to register SIGCHLD handler");
     }
 
-    spdlog::info("ProcessManager: Initialized with SIGCHLD handler");
+    spdlog::debug("ProcessManager: Initialized with SIGCHLD handler");
 }
 
 ProcessManager::~ProcessManager() {
@@ -58,7 +58,7 @@ ProcessManager::~ProcessManager() {
     
     std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
 
-    spdlog::info("ProcessManager: Terminating processes number={}", processList.size());
+    spdlog::debug("ProcessManager: Terminating processes number={}", processList.size());
 
     // Clear the process list, which will call Process destructors
     // Each Process destructor will kill and wait for its process
@@ -66,7 +66,7 @@ ProcessManager::~ProcessManager() {
 
     GLOBAL_PROCESS_MANAGER = nullptr;
 
-    spdlog::info("ProcessManager: Destroyed");
+    spdlog::debug("ProcessManager: Destroyed");
 }
 
 bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
@@ -86,19 +86,19 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
             _exit(EXIT_FAILURE);
         }
         default:
-            spdlog::info("Process: forked successfully for Process with pid={}", process->pid);
+            spdlog::debug("Process: forked successfully for Process with pid={}", process->pid);
             process->status = RUNNING;
     }
     pid_t pid = process->getPid();
     processList[pid] = std::move(process);
-    spdlog::info("ProcessManager: Added process with pid={}", pid);
+    spdlog::debug("ProcessManager: Added process with pid={}", pid);
     return true;
 }
 
 
 void ProcessManager::removeProcess(pid_t pid) {
     processList.erase(pid);
-    spdlog::info("ProcessManager: Removed process with pid={}", pid);
+    spdlog::debug("ProcessManager: Removed process with pid={}", pid);
 }
 
 

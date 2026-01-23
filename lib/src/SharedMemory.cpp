@@ -8,7 +8,7 @@
 // Create or repleace link to shared memory. Assert if got no -1 vars.
 SharedMemory::SharedMemory(bool isCreator)
     : GenericIPC(isCreator), shmID(-1), ptr(nullptr) {
-    spdlog::info("SharedMemory: init, isCreator={}", isCreator);
+    spdlog::debug("SharedMemory: init, isCreator={}", isCreator);
 
     const key_t key = ftok(".", SEM_PROJ_ID);
     if (key == -1) {
@@ -29,7 +29,7 @@ SharedMemory::SharedMemory(bool isCreator)
         throw std::runtime_error("shmat failed");
     }
 
-    spdlog::info("SharedMemory: init compleated! key={}, shmID={}", key, shmID);
+    spdlog::debug("SharedMemory: init compleated! key={}, shmID={}", key, shmID);
 }
 
 
@@ -40,7 +40,7 @@ SharedMemory::~SharedMemory() {
     }
 
     if (isThisCreator()) {
-        spdlog::info("SharedMemory: destructor of creator, deleting segment shmID={}", shmID);
+        spdlog::debug("SharedMemory: destructor of creator, deleting segment shmID={}", shmID);
         if (shmID != -1) {
             if (const auto result = shmctl(shmID, IPC_RMID, nullptr); result == -1) {
                 spdlog::error("SharedMemory: deletion of shared memory failed! RISK OF LEAK! shmID={}", shmID);
@@ -50,7 +50,7 @@ SharedMemory::~SharedMemory() {
             spdlog::error("SharedMemory: Owner lost access to schID!");
         }
     }
-    spdlog::info("SharedMemory: destructor completed");
+    spdlog::debug("SharedMemory: destructor completed");
 }
 
 DataSOR *SharedMemory::getPtr() const {

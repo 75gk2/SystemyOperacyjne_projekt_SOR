@@ -8,7 +8,7 @@
 
 SemaphoreArray::SemaphoreArray(bool isCreator)
     : GenericIPC(isCreator), semID(-1), SEM_COUNT(static_cast<int>(SEM_TYPE::__COUNT_SENTINEL)) {
-    spdlog::info("SemaphoreArray: init, isCreator={}", isCreator);
+    spdlog::debug("SemaphoreArray: init, isCreator={}", isCreator);
 
     const key_t key = ftok(".", SEM_PROJ_ID);
     if (key == -1) {
@@ -23,12 +23,12 @@ SemaphoreArray::SemaphoreArray(bool isCreator)
         throw std::runtime_error("semget failed");
     }
 
-    spdlog::info("SemaphoreArray: init compleated! key={}, semID={}", key, semID);
+    spdlog::debug("SemaphoreArray: init compleated! key={}, semID={}", key, semID);
 }
 
 SemaphoreArray::~SemaphoreArray() {
     if (isThisCreator()) {
-        spdlog::info("SemaphoreArray: destructor of creator, deleting semaphores semID={}", semID);
+        spdlog::debug("SemaphoreArray: destructor of creator, deleting semaphores semID={}", semID);
         if (semID != -1) {
             if (const auto result = semctl(semID, 0, IPC_RMID); result == -1) {
                 spdlog::error("SemaphoreArray: deletion of semaphore array failed! RISK OF LEAK! semID={}", semID);

@@ -8,7 +8,7 @@
 
 MessageQueue::MessageQueue(const char queueId, bool isCreator)
     : GenericIPC(isCreator), msqId(-1), queueId(queueId) {
-    spdlog::info("MessageQueue: init, queueId={}, isCreator={}", queueId, isCreator);
+    spdlog::debug("MessageQueue: init, queueId={}, isCreator={}", queueId, isCreator);
 
     const char proj_id = queueId  ? queueId : MSG_PROJ_ID;
     const key_t key = ftok(".", proj_id);
@@ -24,12 +24,12 @@ MessageQueue::MessageQueue(const char queueId, bool isCreator)
         throw std::runtime_error("msgget failed");
     }
 
-    spdlog::info("MessageQueue: init completed! queueId={}, key={}, msqId={}", queueId, key, msqId);
+    spdlog::debug("MessageQueue: init completed! queueId={}, key={}, msqId={}", queueId, key, msqId);
 }
 
 MessageQueue::~MessageQueue() {
     if (isThisCreator()) {
-        spdlog::info("MessageQueue: destructor of creator, deleting message queue msqId={}", msqId);
+        spdlog::debug("MessageQueue: destructor of creator, deleting message queue msqId={}", msqId);
         if (msqId != -1) {
             if (const auto result = msgctl(msqId, IPC_RMID, nullptr); result == -1) {
                 spdlog::error("MessageQueue: deletion of message queue failed! RISK OF LEAK! msqId={}", msqId);
