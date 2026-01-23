@@ -22,12 +22,12 @@ Process::Process(ProcessType processType) : status(UNMANAGED) {
 
 Process::~Process() {
     if (pid > 0 && status == RUNNING) {
-        spdlog::info("Process: Terminating process with pid={}", pid);
+        spdlog::debug("Process: Terminating process with pid={}", pid);
         kill(pid, SIGTERM);
         
         int status;
         waitpid(pid, &status, 0); // blocking wait
-        spdlog::info("Process: Process with pid={} terminated", pid);
+        spdlog::debug("Process: Process with pid={} terminated", pid);
     }
 }
 
