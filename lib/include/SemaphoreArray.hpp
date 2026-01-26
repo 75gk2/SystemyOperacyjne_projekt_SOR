@@ -19,6 +19,9 @@ public:
 
     [[nodiscard]] bool pullDown(SEM_TYPE semNum, unsigned short int byN = 1) const;
 
+    [[nodiscard]] bool setValue(SEM_TYPE semNum, int value) const;
+
+
 private:
     int semID;
     const int SEM_COUNT;
