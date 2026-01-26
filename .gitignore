@@ -4,6 +4,7 @@ wymagania_ogolne.md
 wersja_robocza.md
 drafts
 test/sor_tests-*.cmake
+docs/todos
 
 
 # extend clion config for whole .idea

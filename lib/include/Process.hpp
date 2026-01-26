@@ -21,17 +21,17 @@ public:
 
     [[nodiscard]] pid_t isManaged() const;
 
-    Process(ProcessType processType);
+    explicit Process(ProcessType processType);
 
     virtual ~Process();
 
 
     // Disable copy and move semantics (required when destructor manages this process (0))
-    Process(const Process &) = delete; //copy construction
-    Process &operator=(const Process &) = delete; //
-    Process(Process &&) = delete;
-
-    Process &operator=(Process &&) = delete;
+    // Process(const Process &) = delete; //copy construction
+    // Process &operator=(const Process &) = delete; //
+    // Process(Process &&) = delete;
+    //
+    // Process &operator=(Process &&) = delete;
 
 private:
     bool assignToManager();
