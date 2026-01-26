@@ -74,3 +74,12 @@ bool SemaphoreArray::pullDown(SEM_TYPE semNum, const unsigned short int byN) con
     }
     return true;
 }
+
+
+bool SemaphoreArray::setValue(SEM_TYPE semNum, const int value) const {
+    if (semctl(semID, static_cast<int>(semNum), SETVAL, value) == -1) {
+        spdlog::error("SemaphoreArray: setValue failed");
+        return false;
+    }
+    return true;
+}
