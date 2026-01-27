@@ -20,7 +20,7 @@ MessageQueue::MessageQueue(const char queueId, bool isCreator)
     msqId = msgget(key, getFlag());
 
     if (msqId == -1) {
-        spdlog::error("MessageQueue: msgget failed");
+        spdlog::error("MessageQueue: msgget failed, queueId={}", queueId);
         throw std::runtime_error("msgget failed");
     }
 

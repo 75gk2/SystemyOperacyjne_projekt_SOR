@@ -1,5 +1,7 @@
 #pragma once
 #include <sched.h>
+#include <string>
+#include <vector>
 
 #include "constants.hpp"
 
@@ -15,13 +17,14 @@ class Process {
     pid_t pid = -1;
     ProcessStatus status;
     const char *path = nullptr;
+    std::vector<std::string> extraArgs;
 
 public:
     [[nodiscard]] pid_t getPid() const;
 
     [[nodiscard]] pid_t isManaged() const;
 
-    explicit Process(ProcessType processType);
+    explicit Process(ProcessType processType, std::vector<std::string> extraArgs = {});
 
     virtual ~Process();
 

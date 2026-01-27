@@ -15,6 +15,17 @@ TEST_CASE("MessageQueue creator and client", "[messagequeue]") {
     }
 }
 
+TEST_CASE("MessageQueue nowait", "[messagequeue]") {
+    {
+        MessageQueue mq_creator('B', true);
+        REQUIRE(mq_creator.getMsgId() != -1);
+        int test;
+        mq_creator.receive(test, 1, false); // empty queue nowait
+
+        // REQUIRE(mq_user.getMsgId() == mq_creator.getMsgId());
+    }
+}
+
 TEST_CASE("MessageQueue send and receive struct message", "[messagequeue]") {
     MessageQueue mq('C', true);
 

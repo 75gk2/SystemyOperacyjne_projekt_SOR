@@ -2,7 +2,7 @@
 #include "spdlog/spdlog.h"
 #include <sys/msg.h>
 
-template <typename T>
+template<typename T>
 int MessageQueue::send(const T &msg, long mtype) {
     spdlog::debug("MessageQueue: sending message, queueId={}, mtype={}", queueId, mtype);
 
@@ -25,8 +25,8 @@ int MessageQueue::send(const T &msg, long mtype) {
     return result;
 }
 
-template <typename T>
-int MessageQueue::receive(T &msg, long mtype) {
+template<typename T>
+int MessageQueue::receive(T &msg, long mtype, bool wait) {
     spdlog::debug("MessageQueue: receiving message, queueId={}, mtype={}", queueId, mtype);
 
     struct {
@@ -34,15 +34,14 @@ int MessageQueue::receive(T &msg, long mtype) {
         T data;
     } buffer;
 
-    int result = msgrcv(msqId, &buffer, sizeof(T), mtype, 0);
-
+    int result = msgrcv(msqId, &buffer, sizeof(T), mtype, wait ? 0 : IPC_NOWAIT);
     if (result == -1) {
+        if (errno == ENOMSG && !wait) {
+            return -2; // brak wiadomości
+        }
         spdlog::error("MessageQueue: msgrcv failed! queueId={}, mtype={}", queueId, mtype);
         return -1;
     }
-
     msg = buffer.data;
-
-    spdlog::debug("MessageQueue: message received successfully");
     return result;
 }

@@ -5,6 +5,8 @@
 #include <bits/stl_vector.h>
 
 #include "Process.hpp"
+#include "SemaphoreArray.hpp"
+#include "SharedMemory.hpp"
 
 
 class ProcessManager {
@@ -21,7 +23,13 @@ public:
     [[nodiscard]] bool assignProcess(std::unique_ptr<Process> process);
     void removeProcess(pid_t pid);
 
+
+
 private:
     std::unordered_map<pid_t, std::unique_ptr<Process>> processList;
     static void printThreadSafeLog(const char *msg, bool isError, const char *subProcessPath);
+
+
+    SemaphoreArray semaphores;
+    SharedMemory memory;
 };
