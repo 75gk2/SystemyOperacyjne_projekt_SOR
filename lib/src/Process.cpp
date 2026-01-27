@@ -1,6 +1,7 @@
 #include  "Process.hpp"
 
 #include <unistd.h>
+#include <utility>
 
 #include "utils.hpp"
 #include <unistd.h>
@@ -16,7 +17,8 @@ pid_t Process::isManaged() const {
     return this->status > UNMANAGED;
 }
 
-Process::Process(ProcessType processType) : status(UNMANAGED) {
+Process::Process(ProcessType processType, std::vector<std::string> extraArgs)
+    : status(UNMANAGED), extraArgs(std::move(extraArgs)) {
     path = getProcessExecPath(processType);
 }
 

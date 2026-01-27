@@ -4,6 +4,7 @@
 #include <csignal>
 #include <sys/wait.h>
 #include <mutex>
+#include <vector>
 #include <spdlog/spdlog.h>
 static ProcessManager *GLOBAL_PROCESS_MANAGER;
 static std::mutex GLOBAL_PROCESS_MANAGER_MUTEX;
@@ -18,7 +19,7 @@ void ProcessManager::sigchldHandler(int sig) {
     int status;
 
     while ((child_pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printThreadSafeLog("SIGCHLD handler: Child process terminated", false,std::to_string(child_pid).c_str());
+        printThreadSafeLog("SIGCHLD handler: Child process terminated", false, std::to_string(child_pid).c_str());
 
         std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
         GLOBAL_PROCESS_MANAGER->removeProcess(child_pid);
@@ -36,7 +37,8 @@ std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
 }
 
 
-ProcessManager::ProcessManager() {
+ProcessManager::ProcessManager() : semaphores(true),
+                                   memory(true) {
     GLOBAL_PROCESS_MANAGER = this;
 
     struct sigaction sa;
@@ -55,7 +57,7 @@ ProcessManager::ProcessManager() {
 ProcessManager::~ProcessManager() {
     // Disable SIGCHLD handler first to prevent concurrent modification during cleanup
     signal(SIGCHLD, SIG_DFL);
-    
+
     std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
 
     spdlog::debug("ProcessManager: Terminating processes number={}", processList.size());
@@ -79,8 +81,16 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
             throw std::runtime_error("Process: Fork failed - can't create Process object");
 
         case 0: {
-            execl(process->path, process->path, static_cast<char *>(nullptr));
-            printThreadSafeLog("Forked process: execl failed for process", true, process->path);
+            std::vector<char *> argv;
+            argv.reserve(process->extraArgs.size() + 2);
+            argv.push_back(const_cast<char *>(process->path));
+            for (auto &arg: process->extraArgs) {
+                argv.push_back(const_cast<char *>(arg.c_str()));
+            }
+            argv.push_back(nullptr);
+
+            execv(process->path, argv.data());
+            printThreadSafeLog("Forked process: execv failed for process", true, process->path);
             // TODO! : Make sure that result of this process is HANDLED by parent process to avoid zombie
             //return without calling any copied destructors
             _exit(EXIT_FAILURE);

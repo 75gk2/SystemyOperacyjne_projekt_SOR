@@ -83,3 +83,18 @@ bool SemaphoreArray::setValue(SEM_TYPE semNum, const int value) const {
     }
     return true;
 }
+int SemaphoreArray::getValue(SEM_TYPE semNum) const {
+    int result = semctl(semID, static_cast<int>(semNum), GETVAL);
+
+    if (result == -1) {
+        spdlog::error(
+            "SemaphoreArray::getValue failed (semID={}, semNum={}, errno={})",
+            semID,
+            static_cast<int>(semNum),
+            errno
+        );
+        return -1;
+    }
+
+    return result;
+}

@@ -7,7 +7,7 @@
 
 LoggerInitializer::LoggerInitializer() {
     // auto logger = spdlog::syslog_logger_mt("test", "SOR", LOG_PID | LOG_CONS, LOG_USER, true); //SYSLOG SINK - for debugging on native system
-    auto logger = spdlog::stdout_color_mt("console");//std::to_string(getpid()));
+    const auto logger = spdlog::stdout_color_mt("console");//std::to_string(getpid()));
 
     spdlog::set_default_logger(logger);
     spdlog::set_level(spdlog::level::debug);

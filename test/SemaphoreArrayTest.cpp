@@ -6,7 +6,7 @@
 
 TEST_CASE("Semaphore Array create/delete ", "[sharedmemory]") {
     SemaphoreArray semArray{true};
-    REQUIRE(semArray.pullUp(SemaphoreArray::SEM_TYPE::FIRST));
-    REQUIRE(semArray.pullUp(SemaphoreArray::SEM_TYPE::FIRST));
-    REQUIRE(semArray.pullDown(SemaphoreArray::SEM_TYPE::FIRST));
+    REQUIRE(semArray.pullUp(SEM_TYPE::TEST));
+    REQUIRE(semArray.pullUp(SEM_TYPE::TEST));
+    REQUIRE(semArray.pullDown(SEM_TYPE::TEST));
 }
