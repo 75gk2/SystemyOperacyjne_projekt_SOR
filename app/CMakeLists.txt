@@ -17,6 +17,7 @@ target_include_directories(appHeaders INTERFACE
 add_library(appImpl
         childProcesses/Patient.cpp
         childProcesses/Registration.cpp
+        childProcesses/Doctor.cpp
 )
 target_link_libraries(appImpl PUBLIC sorLib appHeaders)
 
