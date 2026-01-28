@@ -29,6 +29,6 @@ void simulateTriage() {
         pm.assignProcess(std::make_unique<Patient>(i, false, false)));
     }
     spdlog::warn("MAIN: Simulation running for 60 seconds");
-    std::this_thread::sleep_for(std::chrono::milliseconds(500000));
+        (void)sleep(500);
     spdlog::warn("MAIN: Time is up, termination");
 }

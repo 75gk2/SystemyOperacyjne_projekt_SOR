@@ -26,9 +26,22 @@ Process::~Process() {
     if (pid > 0 && status == RUNNING) {
         spdlog::debug("Process: Terminating process with pid={}", pid);
         kill(pid, SIGTERM);
-        
+
         int status;
-        waitpid(pid, &status, 0); // blocking wait
+        //handle in while in case of interruption by intrupt signal
+        while (true) {
+            const pid_t result = waitpid(pid, &status, 0); // blocking wait
+
+            //process killed successfully
+            if (result == pid) break;
+
+            //just interrupted not killed!!!!!! Do next iteration of while
+            if (result == -1 && errno == EINTR) continue;
+
+            //Crashed elsewhere or reaped - no need to wait!
+            if (result == -1 && errno == ECHILD) break;
+            break;
+        }
         spdlog::debug("Process: Process with pid={} terminated", pid);
     }
 }
