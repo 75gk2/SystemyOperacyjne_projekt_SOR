@@ -1,12 +1,17 @@
 #include "ProcessManager.hpp"
 #include "Process.hpp"
 
+#include <atomic>
 #include <cerrno>
 #include <chrono>
+#include <csignal>
 #include <cstdio>
+#include <ctime>
 #include <sys/wait.h>
 #include <thread>
 #include <vector>
+#include <unistd.h>
+
 #include <spdlog/spdlog.h>
 
 std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
@@ -25,11 +30,13 @@ std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
 
 ProcessManager::ProcessManager() : semaphores(true),
                                    memory(true) {
+    installSigintHandlerGlobally();
     reaperThread = std::thread(&ProcessManager::reaperLoop, this);
     spdlog::debug("ProcessManager: Reaper thread started");
 }
 
 ProcessManager::~ProcessManager() {
+    requestShutdown();
     stopReaper.store(true);
     if (reaperThread.joinable()) {
         reaperThread.join();
@@ -46,6 +53,10 @@ ProcessManager::~ProcessManager() {
 }
 
 bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
+    if (isShutdownRequested()) {
+        spdlog::warn("ProcessManager: shutdown requested, not spawning new process path={}", process->path);
+        return false;
+    }
     if (!process->assignToManager()) return false;
     switch (process->pid = fork()) {
         case -1:
@@ -90,9 +101,8 @@ void ProcessManager::removeProcess(pid_t pid) {
 }
 
 
-void ProcessManager::printThreadSafeLog(const char *msg, bool isError = true, const char *subProcessPath = "") {
-    auto timeIs = std::chrono::system_clock::to_time_t(
-        std::chrono::system_clock::now());
+void ProcessManager::printThreadSafeLog(const char *msg, bool isError, const char *subProcessPath) {
+    auto timeIs = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     tm tm{};
     localtime_r(&timeIs, &tm);
@@ -102,7 +112,6 @@ void ProcessManager::printThreadSafeLog(const char *msg, bool isError = true, co
         tm.tm_hour,
         tm.tm_min,
         tm.tm_sec,
-        // tm.tm_
         getpid(),
         isError ? "ERROR" : "INFO",
         msg,
@@ -110,10 +119,48 @@ void ProcessManager::printThreadSafeLog(const char *msg, bool isError = true, co
     );
 }
 
+namespace {
+    // Flag set by SIGINT handler
+    //volatile sig_atomic_t is special type preffered for signal handlers by C++DOCS
+    volatile sig_atomic_t g_sigintReceived = 0;
+    std::atomic_bool g_sigintInstalled{false};
+
+    void onSigint(int) {
+        g_sigintReceived = 1;
+    }
+}
+
+void ProcessManager::installSigintHandlerGlobally() {
+
+    // Make sure that it was not installed by another ProcessManager already (case of sequential simullation)
+    if (g_sigintInstalled.exchange(true)) return;
+
+    struct sigaction sa{};
+    sa.sa_handler = onSigint;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGINT, &sa, nullptr) == -1) {
+        perror("ProcessManager: sigaction(SIGINT) failed");
+    }
+}
+
+void ProcessManager::requestShutdown() {
+    shutdownRequested.store(true);
+}
+
+bool ProcessManager::isShutdownRequested() {
+    if (shutdownRequested.load()) return true;
+    if (g_sigintReceived != 0) shutdownRequested.store(true);
+    return shutdownRequested.load();
+}
+
+
 void ProcessManager::reaperLoop() {
     printThreadSafeLog("Reaper thread for zombie cleanup started.", false, "");
 
     while (!stopReaper.load()) {
+        if (isShutdownRequested()) break;
         int status = 0;
         pid_t pid = waitpid(-1, &status, WNOHANG);
 

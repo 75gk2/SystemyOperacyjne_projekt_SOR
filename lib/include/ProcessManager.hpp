@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -23,6 +24,8 @@ public:
     [[nodiscard]] bool assignProcess(std::unique_ptr<Process> process);
     void removeProcess(pid_t pid);
 
+    // True after SIGINT or requestShutdown()
+    [[nodiscard]] bool isShutdownRequested();
 
 
 private:
@@ -30,6 +33,11 @@ private:
     static void printThreadSafeLog(const char *msg, bool isError, const char *subProcessPath);
 
     void reaperLoop();
+
+    void installSigintHandlerGlobally();
+    void requestShutdown();
+
+    std::atomic_bool shutdownRequested{false};
 
     std::atomic_bool stopReaper{false};
     std::thread reaperThread;
