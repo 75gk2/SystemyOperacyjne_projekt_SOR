@@ -1,6 +1,7 @@
 #include  "SharedMemory.hpp"
 
 #include <cstdio>
+#include <cerrno>
 #include <sys/shm.h>
 
 #include "utils.hpp"
@@ -13,6 +14,7 @@ SharedMemory::SharedMemory(bool isCreator)
     const key_t key = ftok(".", SEM_PROJ_ID);
     if (key == -1) {
         spdlog::error("SharedMemory: ftok failed");
+        perror("SharedMemory: ftok failed");
         throw std::runtime_error("ftok failed");
     }
 
@@ -20,12 +22,14 @@ SharedMemory::SharedMemory(bool isCreator)
 
     if (shmID == -1) {
         spdlog::error("SharedMemory: shmget failed");
+        perror("SharedMemory: shmget failed");
         throw std::runtime_error("shmget failed");
     }
 
     ptr = static_cast<DataSOR *>(shmat(shmID, nullptr, 0));
     if (isPtrNegative()) {
         spdlog::error("SharedMemory: shmat failed");
+        perror("SharedMemory: shmat failed");
         throw std::runtime_error("shmat failed");
     }
 
@@ -44,6 +48,7 @@ SharedMemory::~SharedMemory() {
         if (shmID != -1) {
             if (const auto result = shmctl(shmID, IPC_RMID, nullptr); result == -1) {
                 spdlog::error("SharedMemory: deletion of shared memory failed! RISK OF LEAK! shmID={}", shmID);
+                perror("SharedMemory: shmctl(IPC_RMID) failed");
             }
             shmID = -1;
         } else {
