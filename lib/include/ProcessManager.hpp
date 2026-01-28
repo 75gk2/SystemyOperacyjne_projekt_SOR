@@ -1,6 +1,8 @@
 #pragma once
+#include <atomic>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <bits/stl_vector.h>
 
@@ -11,8 +13,6 @@
 
 class ProcessManager {
 public:
-    static void sigchldHandler(int sig);
-
     std::vector<pid_t> getPidsOfProcesses() const;
     // static ProcessManager* GLOBAL_PROCESS_MANAGER;
     // static std::mutex GLOBAL_PROCESS_MANAGER_MUTEX;
@@ -28,6 +28,12 @@ public:
 private:
     std::unordered_map<pid_t, std::unique_ptr<Process>> processList;
     static void printThreadSafeLog(const char *msg, bool isError, const char *subProcessPath);
+
+    void reaperLoop();
+
+    std::atomic_bool stopReaper{false};
+    std::thread reaperThread;
+    mutable std::mutex processMutex;
 
 
     SemaphoreArray semaphores;

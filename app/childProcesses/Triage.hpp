@@ -26,5 +26,9 @@ public:
         bool dismissed;
     };
 
-    Triage() : Process(ProcessType::TRIAGE) {}
+    MessageQueue triageIn;
+    MessageQueue triageOut;
+
+    Triage() : Process(ProcessType::TRIAGE), triageIn(QID_TRIAGE_IN, true), triageOut(QID_TRIAGE_OUT, true) {
+    }
 };

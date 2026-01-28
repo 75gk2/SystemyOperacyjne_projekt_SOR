@@ -1,6 +1,6 @@
 #include <unistd.h>
 
-#include "manageRegistrationWindows.hpp"
+#include "manageSimulations.hpp"
 #include "ProcessManager.hpp"
 #include "childProcesses/Registration.hpp"
 #include "spdlog/spdlog.h"
@@ -9,7 +9,7 @@ void simulateManageRegistrationWindows() {
 
     ProcessManager pm;
     spdlog::info("MAIN: Assigning Registration process, result={}",
-        pm.assignProcess(std::make_unique<Registration>(10)));
+        pm.assignProcess(std::make_unique<Registration>(10, 100)));
 
     for (int j = 1; j <= 3; j++) {
         for (int i = 1; i <= 30; i++) {

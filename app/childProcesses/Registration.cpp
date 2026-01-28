@@ -2,8 +2,8 @@
 
 #include <string>
 
-Registration::Registration(int n)
-  : Process(ProcessType::REGISTRATION, {std::to_string(n)}),
+Registration::Registration(int n, int delayMs)
+  : Process(ProcessType::REGISTRATION, {std::to_string(n), std::to_string(delayMs)}),
       registrationQueue(Q_REGISTRATION_ID, true),
       registrationCtrlQueue(QID_REGISTRATION_CTRL, true),
       windowIn(QID_WINDOW_1_IN, true),
