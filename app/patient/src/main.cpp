@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+
     // Response get
     Registration::Q_WINDOW_OUT_STRUCT response{};
     if (windowOut.receive(response, data.socialId, true) < 0) {
@@ -152,7 +153,7 @@ int main(int argc, char *argv[]) {
     }
 
     bool canHurry = response.youCanHurry;
-    spdlog::info("Patient: finished registration process, canHurry={}", canHurry);
+    spdlog::info("Patient: finished registration, going to waithing room, canHurry={}", canHurry);
 
     // join waiting room (occupy seat)
     if (!semaphores.pullDown(SEM_TYPE::WAITING_ROOM_QUEUE, 1)) {
@@ -160,18 +161,26 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    spdlog::info("Patient: entered waiting room", canHurry);
+
+
+    // send data to triage
     spdlog::info("Patient: entered waiting room, waiting for triage");
     if (triageIn.send(data, Triage::QTYPE_TRIAGE_IN) < 0) {
         spdlog::error("Patient: failed to send data to triage");
         return 1;
     }
 
+    spdlog::info("Patient: queued to triage, and waiting for response");
+
+    //triage response
     Triage::Q_TRIAGE_OUT_STRUCT triageResponse{};
     if (triageOut.receive(triageResponse, data.socialId, true) < 0) {
         spdlog::error("Patient: failed to receive triage response");
         return 1;
     }
 
+    //response info
     spdlog::info(
         "Patient: triage result color={}, dismissed={}, specialist={}",
         colorToStr(triageResponse.color),

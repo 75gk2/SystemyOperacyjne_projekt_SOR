@@ -1,37 +1,22 @@
 #include "ProcessManager.hpp"
 #include "Process.hpp"
 
-#include <csignal>
+#include <cerrno>
+#include <chrono>
 #include <sys/wait.h>
-#include <mutex>
+#include <thread>
 #include <vector>
 #include <spdlog/spdlog.h>
-static ProcessManager *GLOBAL_PROCESS_MANAGER;
-static std::mutex GLOBAL_PROCESS_MANAGER_MUTEX;
-
-//global func for whole project
-void ProcessManager::sigchldHandler(int sig) {
-    if (GLOBAL_PROCESS_MANAGER == nullptr) {
-        printThreadSafeLog("[CRITICAL]: PM sigchildHandler got event, but no PM defined!", true, "");
-        return;
-    }
-    pid_t child_pid;
-    int status;
-
-    while ((child_pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printThreadSafeLog("SIGCHLD handler: Child process terminated", false, std::to_string(child_pid).c_str());
-
-        std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
-        GLOBAL_PROCESS_MANAGER->removeProcess(child_pid);
-    }
-}
 
 std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
     std::vector<pid_t> keys;
-    keys.reserve(processList.size());
+    {
+        std::lock_guard lock(processMutex);
+        keys.reserve(processList.size());
 
-    for (const auto &kv: processList) {
-        keys.push_back(kv.first);
+        for (const auto &kv: processList) {
+            keys.push_back(kv.first);
+        }
     }
     return keys;
 }
@@ -39,42 +24,28 @@ std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
 
 ProcessManager::ProcessManager() : semaphores(true),
                                    memory(true) {
-    GLOBAL_PROCESS_MANAGER = this;
-
-    struct sigaction sa;
-    sa.sa_handler = sigchldHandler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_NOCLDSTOP | SA_RESTART;
-
-    if (sigaction(SIGCHLD, &sa, nullptr) == -1) {
-        spdlog::error("ProcessManager: Failed to register SIGCHLD handler");
-        throw std::runtime_error("Failed to register SIGCHLD handler");
-    }
-
-    spdlog::debug("ProcessManager: Initialized with SIGCHLD handler");
+    reaperThread = std::thread(&ProcessManager::reaperLoop, this);
+    spdlog::debug("ProcessManager: Reaper thread started");
 }
 
 ProcessManager::~ProcessManager() {
-    // Disable SIGCHLD handler first to prevent concurrent modification during cleanup
-    signal(SIGCHLD, SIG_DFL);
+    stopReaper.store(true);
+    if (reaperThread.joinable()) {
+        reaperThread.join();
+    }
 
-    std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
+    {
+        std::lock_guard lock(processMutex);
+        spdlog::debug("ProcessManager: Terminating processes number={}", processList.size());
 
-    spdlog::debug("ProcessManager: Terminating processes number={}", processList.size());
-
-    // Clear the process list, which will call Process destructors
-    // Each Process destructor will kill and wait for its process
-    processList.clear();
-
-    GLOBAL_PROCESS_MANAGER = nullptr;
-
+        // Clear the process list, what calls Process' destructor, → each Process destructor will kill and wait self process
+        processList.clear();
+    }
     spdlog::debug("ProcessManager: Destroyed");
 }
 
 bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
     if (!process->assignToManager()) return false;
-    std::lock_guard lock(GLOBAL_PROCESS_MANAGER_MUTEX);
-
     switch (process->pid = fork()) {
         case -1:
             spdlog::error("Process: Fork failed for process path={}", process->path);
@@ -100,13 +71,17 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
             process->status = RUNNING;
     }
     pid_t pid = process->getPid();
-    processList[pid] = std::move(process);
+    {
+        std::lock_guard lock(processMutex);
+        processList[pid] = std::move(process);
+    }
     spdlog::debug("ProcessManager: Added process with pid={}", pid);
     return true;
 }
 
 
 void ProcessManager::removeProcess(pid_t pid) {
+    std::lock_guard lock(processMutex);
     processList.erase(pid);
     spdlog::debug("ProcessManager: Removed process with pid={}", pid);
 }
@@ -130,4 +105,33 @@ void ProcessManager::printThreadSafeLog(const char *msg, bool isError = true, co
         msg,
         subProcessPath
     );
+}
+
+void ProcessManager::reaperLoop() {
+    printThreadSafeLog("Reaper thread for zombie cleanup started.", false, "");
+
+    while (!stopReaper.load()) {
+        int status = 0;
+        pid_t pid = waitpid(-1, &status, WNOHANG);
+
+        if (pid > 0) {
+            {
+                std::lock_guard lock(processMutex);
+                auto it = processList.find(pid);
+                if (it != processList.end()) {
+                    printThreadSafeLog("Reaper: child process terminated", false, std::to_string(pid).c_str());
+                    processList.erase(it);
+                }
+            }
+        } else if (pid == 0) {
+            continue;
+        } else if (errno == ECHILD || errno == EINTR) {
+            continue;
+        } else {
+            printThreadSafeLog("Reaper: waitpid error", true, "");
+            break;
+        }
+    }
+
+    printThreadSafeLog("Reaper thread for zombie cleanup stopped.", false, "");
 }

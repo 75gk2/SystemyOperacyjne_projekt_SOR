@@ -1,3 +1,8 @@
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
 #include <unistd.h>
 
 #include "MessageQueue.hpp"
@@ -9,6 +14,7 @@
 
 int window1_id = 1;
 int window2_id = 2;
+std::atomic<int> g_delayMs{0};
 
 
 struct WindowState {
@@ -61,7 +67,10 @@ void *registrationWindow(void *arg) {
         Registration::Q_WINDOW_OUT_STRUCT response{
             msg.isVIP || msg.diesNow
         };
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        const int delayMs = g_delayMs.load();
+        if (delayMs > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+        }
         if(myWindowSend.send(response,  msg.socialId)) {
             spdlog::warn("RegistrationWindow failed to send message! windowId={}, socialId={}", windowId, msg.socialId);
         }
@@ -138,9 +147,8 @@ typedef struct {
     pthread_cond_t *feedbackCond;
 } ThreadData;
 
-bool registrationWindowsController() {
+bool registrationWindowsController(const int n) {
     SemaphoreArray semaphores = SemaphoreArray(false);
-    const int n = POCZEKALNIA_SIZE;
     pthread_t window1tid, window2tid;
     bool isWindow1running = false;
     bool isWindow2running = false;
@@ -222,6 +230,13 @@ bool registrationWindowsController() {
 
 int main(int argc, char *argv[]) {
     spdlog::info("Registration: init");
+    int n = POCZEKALNIA_SIZE;
+    if (argc > 1) {
+        n = std::max(1, std::atoi(argv[1]));
+    }
+    if (argc > 2) {
+        g_delayMs.store(std::max(0, std::atoi(argv[2])));
+    }
     try {
         MessageQueue registrationCtrl(Registration::QID_REGISTRATION_CTRL, false);
         SemaphoreArray semaphores(false);
@@ -233,7 +248,7 @@ int main(int argc, char *argv[]) {
         spdlog::error("Registration: semaphore init failed: {}", e.what());
         return 1;
     }
-    if (!registrationWindowsController()) {
+    if (!registrationWindowsController(n)) {
         spdlog::error("Registration: windows controller failed ://");
         return 1;
     }

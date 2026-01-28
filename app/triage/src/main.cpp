@@ -50,8 +50,8 @@ namespace {
 int main(int argc, char *argv[]) {
     spdlog::info("Triage: init");
     try {
-        MessageQueue triageIn(Triage::QID_TRIAGE_IN, true);
-        MessageQueue triageOut(Triage::QID_TRIAGE_OUT, true);
+        MessageQueue triageIn(Triage::QID_TRIAGE_IN, false);
+        MessageQueue triageOut(Triage::QID_TRIAGE_OUT, false);
         SemaphoreArray semaphores(false);
 
         if (!semaphores.setValue(SEM_TYPE::WAITING_ROOM_QUEUE, POCZEKALNIA_SIZE)) {
@@ -59,15 +59,20 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
+        spdlog::info("Triage: initialized semaphore");
+
         std::mt19937 rng(static_cast<unsigned int>(
             std::chrono::high_resolution_clock::now().time_since_epoch().count()));
 
         while (true) {
+            spdlog::info("Triage: waiting for next data");
             Triage::Q_TRIAGE_IN_STRUCT patient{};
             if (triageIn.receive(patient, Triage::QTYPE_TRIAGE_IN, true) < 0) {
                 spdlog::error("Triage: failed to receive patient data");
                 continue;
             }
+
+            spdlog::info("Triage: received patient data, preparing response");
 
             const Patient::Color color = pickColor(patient, rng);
             const bool dismissed = (color == Patient::DISMISSED);
@@ -77,6 +82,9 @@ int main(int argc, char *argv[]) {
             if (triageOut.send(out, patient.socialId) < 0) {
                 spdlog::error("Triage: failed to send triage result, socialId={}", patient.socialId);
             }
+
+            spdlog::info("Triage: sending response with color={} where={}", color, specialist);
+
         }
     } catch (const std::exception &e) {
         spdlog::error("Triage: exception: {}", e.what());

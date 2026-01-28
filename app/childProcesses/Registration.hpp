@@ -33,7 +33,7 @@ public:
     MessageQueue windowIn;
     MessageQueue windowOut;
 
-    explicit Registration(int n);
+    explicit Registration(int n, int delayMs = 0);
 };
 
 
