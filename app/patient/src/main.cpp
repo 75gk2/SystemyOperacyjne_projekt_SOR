@@ -3,6 +3,7 @@
 #include "SemaphoreArray.hpp"
 #include "childProcesses/Registration.hpp"
 #include "childProcesses/Triage.hpp"
+#include "childProcesses/Doctor.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -61,6 +62,19 @@ namespace {
         }
     }
 
+    const char *outcomeToStr(Doctor::Outcome outcome) {
+        switch (outcome) {
+            case Doctor::RELEASED_HOME:
+                return "home";
+            case Doctor::ADMITTED_TO_HOSPITAL:
+                return "hospital";
+            case Doctor::REDIRECTED_TO_SPECIALIST_FACILITY:
+                return "redirect";
+            default:
+                return "unknown";
+        }
+    }
+
     Patient::Illness randomIllness() {
         std::mt19937 rng(static_cast<unsigned int>(
             std::chrono::high_resolution_clock::now().time_since_epoch().count()));
@@ -76,6 +90,8 @@ int main(int argc, char *argv[]) {
     MessageQueue registrationCtrl(Registration::QID_REGISTRATION_CTRL, false);
     MessageQueue triageIn(Triage::QID_TRIAGE_IN, false);
     MessageQueue triageOut(Triage::QID_TRIAGE_OUT, false);
+    MessageQueue doctorIn(Doctor::QID_DOCTOR_IN, false);
+    MessageQueue doctorOut(Doctor::QID_DOCTOR_OUT, false);
     SemaphoreArray semaphores(false);
 
     Patient::BasicData data{};
@@ -193,6 +209,29 @@ int main(int argc, char *argv[]) {
         spdlog::error("Patient: failed to leave waiting room");
         return 1;
     }
+
+    if (triageResponse.dismissed || triageResponse.color == Patient::DISMISSED) {
+        spdlog::info("Patient: dismissed after triage, leaving");
+        return 0;
+    }
+
+    Doctor::Q_DOCTOR_IN_STRUCT doctorRequest{data, triageResponse.color, triageResponse.specialist};
+    long priority = Doctor::priorityToType(triageResponse.specialist, triageResponse.color);
+
+    spdlog::info("Patient: waiting for doctor, priority={}, specialist={}", priority,
+        specialistToStr(triageResponse.specialist));
+    if (doctorIn.send(doctorRequest, priority) < 0) {
+        spdlog::error("Patient: failed to enqueue for doctor");
+        return 1;
+    }
+
+    Doctor::Q_DOCTOR_OUT_STRUCT doctorResponse{};
+    if (doctorOut.receive(doctorResponse, data.socialId, true) < 0) {
+        spdlog::error("Patient: failed to receive doctor response");
+        return 1;
+    }
+
+    spdlog::info("Patient: doctor outcome={}", outcomeToStr(doctorResponse.outcome));
 
 
     return 0;
