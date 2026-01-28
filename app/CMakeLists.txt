@@ -1,5 +1,6 @@
 add_executable(main main/src/main.cpp
-        main/src/scenarios/manageRegistrationWindows.cpp)
+        main/src/scenarios/simulateWindowsReception.cpp
+        main/src/scenarios/simulateTriage.cpp)
 add_executable(doctorProc doctor/src/main.cpp)
 add_executable(patientProc patient/src/main.cpp)
 add_executable(registrationProc registration/src/main.cpp)
