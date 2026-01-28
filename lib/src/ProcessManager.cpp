@@ -3,6 +3,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cstdio>
 #include <sys/wait.h>
 #include <thread>
 #include <vector>
@@ -49,6 +50,7 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
     switch (process->pid = fork()) {
         case -1:
             spdlog::error("Process: Fork failed for process path={}", process->path);
+            perror("Process: fork failed");
             throw std::runtime_error("Process: Fork failed - can't create Process object");
 
         case 0: {
@@ -62,6 +64,7 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
 
             execv(process->path, argv.data());
             printThreadSafeLog("Forked process: execv failed for process", true, process->path);
+            perror("Process: execv failed");
             // TODO! : Make sure that result of this process is HANDLED by parent process to avoid zombie
             //return without calling any copied destructors
             _exit(EXIT_FAILURE);
@@ -129,6 +132,7 @@ void ProcessManager::reaperLoop() {
             continue;
         } else {
             printThreadSafeLog("Reaper: waitpid error", true, "");
+            perror("ProcessManager: waitpid error");
             break;
         }
     }

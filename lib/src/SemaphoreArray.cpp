@@ -2,6 +2,8 @@
 
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <cerrno>
+#include <cstdio>
 
 #include "constants.hpp"
 #include "utils.hpp"
@@ -13,6 +15,7 @@ SemaphoreArray::SemaphoreArray(bool isCreator)
     const key_t key = ftok(".", SEM_PROJ_ID);
     if (key == -1) {
         spdlog::error("SemaphoreArray: ftok failed");
+        perror("SemaphoreArray: ftok failed");
         throw std::runtime_error("ftok failed");
     }
 
@@ -20,6 +23,7 @@ SemaphoreArray::SemaphoreArray(bool isCreator)
 
     if (semID == -1) {
         spdlog::error("SemaphoreArray: semget failed");
+        perror("SemaphoreArray: semget failed");
         throw std::runtime_error("semget failed");
     }
 
@@ -32,6 +36,7 @@ SemaphoreArray::~SemaphoreArray() {
         if (semID != -1) {
             if (const auto result = semctl(semID, 0, IPC_RMID); result == -1) {
                 spdlog::error("SemaphoreArray: deletion of semaphore array failed! RISK OF LEAK! semID={}", semID);
+                perror("SemaphoreArray: semctl(IPC_RMID) failed");
             }
             semID = -1;
         } else {
@@ -44,6 +49,7 @@ template<int N>
 bool SemaphoreArray::operate(struct sembuf (&sops)[N]) const{
     if (semop(semID, sops, N) == -1) {
         spdlog::error("SemaphoreArray: operate (atomic) semop failed!");
+        perror("SemaphoreArray: semop failed");
         return false;
     }
     return true;
@@ -79,6 +85,7 @@ bool SemaphoreArray::pullDown(SEM_TYPE semNum, const unsigned short int byN) con
 bool SemaphoreArray::setValue(SEM_TYPE semNum, const int value) const {
     if (semctl(semID, static_cast<int>(semNum), SETVAL, value) == -1) {
         spdlog::error("SemaphoreArray: setValue failed");
+        perror("SemaphoreArray: semctl(SETVAL) failed");
         return false;
     }
     return true;
@@ -93,6 +100,7 @@ int SemaphoreArray::getValue(SEM_TYPE semNum) const {
             static_cast<int>(semNum),
             errno
         );
+        perror("SemaphoreArray: semctl(GETVAL) failed");
         return -1;
     }
 

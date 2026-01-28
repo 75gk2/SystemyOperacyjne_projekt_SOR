@@ -2,6 +2,8 @@
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <cerrno>
+#include <cstdio>
 
 #include "constants.hpp"
 #include "spdlog/spdlog.h"
@@ -14,6 +16,7 @@ MessageQueue::MessageQueue(const char queueId, bool isCreator)
     const key_t key = ftok(".", proj_id);
     if (key == -1) {
         spdlog::error("MessageQueue: ftok failed for queueId={}", queueId);
+        perror("MessageQueue: ftok failed");
         throw std::runtime_error("ftok failed");
     }
 
@@ -21,6 +24,7 @@ MessageQueue::MessageQueue(const char queueId, bool isCreator)
 
     if (msqId == -1) {
         spdlog::error("MessageQueue: msgget failed, queueId={}", queueId);
+        perror("MessageQueue: msgget failed");
         throw std::runtime_error("msgget failed");
     }
 
@@ -33,6 +37,7 @@ MessageQueue::~MessageQueue() {
         if (msqId != -1) {
             if (const auto result = msgctl(msqId, IPC_RMID, nullptr); result == -1) {
                 spdlog::error("MessageQueue: deletion of message queue failed! RISK OF LEAK! msqId={}", msqId);
+                perror("MessageQueue: msgctl(IPC_RMID) failed");
             }
             msqId = -1;
         } else {
