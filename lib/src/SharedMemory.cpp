@@ -11,7 +11,7 @@ SharedMemory::SharedMemory(bool isCreator)
     : GenericIPC(isCreator), shmID(-1), ptr(nullptr) {
     spdlog::debug("SharedMemory: init, isCreator={}", isCreator);
 
-    const key_t key = ftok(".", SEM_PROJ_ID);
+    const key_t key = ftok(".", SHM_PROJ_ID);
     if (key == -1) {
         spdlog::error("SharedMemory: ftok failed");
         perror("SharedMemory: ftok failed");
