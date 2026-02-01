@@ -111,6 +111,7 @@ int main(int argc, char *argv[]) {
         data.diesNow = (data.socialId % 20 == 0);
     }
 
+    if (!data.isVIP) {
     // Join registration queue - increase counter
     if (!semaphores.pullUp(SEM_TYPE::REGISTRATION_QUEUE, 1)) {
         spdlog::error("Patient: failed to join registration queue");
@@ -144,7 +145,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!data.isVIP) {
         // Send data to my window
         spdlog::info("Patient: assigned to registration window {}", registration.isFreeOneElseTwo ? 1 : 2);
         if (windowIn.send(data, Registration::QTYPE_WINDOW_IN) < 0) {
@@ -204,14 +204,13 @@ int main(int argc, char *argv[]) {
         specialistToStr(triageResponse.specialist)
     );
 
-    // patient leaves waiting room when directed to doctor or dismissed
-    if (!semaphores.pullUp(SEM_TYPE::WAITING_ROOM_QUEUE, 1)) {
-        spdlog::error("Patient: failed to leave waiting room");
-        return 1;
-    }
 
     if (triageResponse.dismissed || triageResponse.color == Patient::DISMISSED) {
-        spdlog::info("Patient: dismissed after triage, leaving");
+        spdlog::info("Patient: dismissed after triage, leaving"); 
+            if (!semaphores.pullUp(SEM_TYPE::WAITING_ROOM_QUEUE, 1)) {
+                spdlog::error("Patient: failed to leave waiting room");
+                return 1;
+            }
         return 0;
     }
 
@@ -224,12 +223,18 @@ int main(int argc, char *argv[]) {
         spdlog::error("Patient: failed to enqueue for doctor");
         return 1;
     }
-
+    
     Doctor::Q_DOCTOR_OUT_STRUCT doctorResponse{};
     if (doctorOut.receive(doctorResponse, data.socialId, true) < 0) {
         spdlog::error("Patient: failed to receive doctor response");
         return 1;
     }
+    //todo add second stage of doctor communication
+    if (!semaphores.pullUp(SEM_TYPE::WAITING_ROOM_QUEUE, 1)) {
+        spdlog::error("Patient: failed to leave waiting room");
+        return 1;
+    }
+
 
     spdlog::info("Patient: doctor outcome={}", outcomeToStr(doctorResponse.outcome));
 
