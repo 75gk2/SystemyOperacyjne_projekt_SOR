@@ -12,7 +12,7 @@ MessageQueue::MessageQueue(const char queueId, bool isCreator)
     : GenericIPC(isCreator), msqId(-1), queueId(queueId) {
     spdlog::debug("MessageQueue: init, queueId={}, isCreator={}", queueId, isCreator);
 
-    const char proj_id = queueId  ? queueId : MSG_PROJ_ID;
+    const char proj_id = queueId ? queueId : MSG_PROJ_ID;
     const key_t key = ftok(".", proj_id);
     if (key == -1) {
         spdlog::error("MessageQueue: ftok failed for queueId={}", queueId);

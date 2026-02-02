@@ -34,17 +34,18 @@ struct WindowArgs {
 void *registrationWindow(void *arg) {
     const auto *args = static_cast<WindowArgs *>(arg);
     int windowId = args->windowId;
-    bool isOneElseTwo = windowId==window1_id;
-    spdlog::info("RegistrationWindow, initialized window, windowId={}",windowId);
+    bool isOneElseTwo = windowId == window1_id;
+    spdlog::info("RegistrationWindow, initialized window, windowId={}", windowId);
     WindowState *state = args->state;
     MessageQueue broadcast{Registration::Q_REGISTRATION_ID, false};
-    MessageQueue myWindowReceive{Registration::QID_WINDOW_1_IN,false};
-    MessageQueue myWindowSend{Registration::QID_WINDOW_1_OUT,false};
+    MessageQueue myWindowReceive{Registration::QID_WINDOW_1_IN, false};
+    MessageQueue myWindowSend{Registration::QID_WINDOW_1_OUT, false};
     bool tokenSent = false;
     SemaphoreArray semaphores(false);
     while (true) {
-        spdlog::info("Semcount={}",semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
-        if (!tokenSent) { // guard for double continuation
+        spdlog::info("Semcount={}", semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
+        if (!tokenSent) {
+            // guard for double continuation
             if (broadcast.send(Registration::Q_REGISTRATION_STRUCT{isOneElseTwo}) < 0) {
                 spdlog::warn("RegistrationWindow failed to send availability token! windowId={}", windowId);
             } else {
@@ -71,7 +72,7 @@ void *registrationWindow(void *arg) {
         if (delayMs > 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
         }
-        if(myWindowSend.send(response,  msg.socialId)) {
+        if (myWindowSend.send(response, msg.socialId)) {
             spdlog::warn("RegistrationWindow failed to send message! windowId={}, socialId={}", windowId, msg.socialId);
         }
         pthread_mutex_lock(&state->lock);
@@ -187,7 +188,7 @@ bool registrationWindowsController(const int n) {
             }
             isWindow2running = true;
             spdlog::info("Registration: Initialized new thread of window{}", window2_id);
-        }else {
+        } else {
             spdlog::error("Registration: Failed to second window 2 thread");
         }
 

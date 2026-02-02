@@ -18,8 +18,12 @@ pid_t Process::isManaged() const {
 }
 
 Process::Process(ProcessType processType, std::vector<std::string> extraArgs)
-    : status(UNMANAGED), extraArgs(std::move(extraArgs)) {
+    : status(UNMANAGED), extraArgs(std::move(extraArgs)), processType(processType) {
     path = getProcessExecPath(processType);
+}
+
+ProcessType Process::getProcessType() const {
+    return processType;
 }
 
 Process::~Process() {

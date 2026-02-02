@@ -18,11 +18,14 @@ class Process {
     ProcessStatus status;
     const char *path = nullptr;
     std::vector<std::string> extraArgs;
+    ProcessType processType;
 
 public:
     [[nodiscard]] pid_t getPid() const;
 
     [[nodiscard]] pid_t isManaged() const;
+
+    [[nodiscard]] ProcessType getProcessType() const;
 
     explicit Process(ProcessType processType, std::vector<std::string> extraArgs = {});
 
@@ -38,6 +41,7 @@ public:
 
 private:
     bool assignToManager();
+
     void setPid(pid_t procPid);
 
     friend class ProcessManager;

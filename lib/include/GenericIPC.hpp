@@ -2,9 +2,12 @@
 class GenericIPC {
 public:
     virtual ~GenericIPC() = default;
+
 protected:
     explicit GenericIPC(bool isCreator);
+
     explicit GenericIPC() = default;
+
     [[nodiscard]] bool isThisCreator() const {
         return isCreator;
     }
@@ -14,7 +17,6 @@ protected:
     }
 
 private:
-
     bool isCreator{false};
     int flag{0600};
 };

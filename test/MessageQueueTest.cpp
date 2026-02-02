@@ -4,7 +4,12 @@
 #include "utils.hpp"
 
 
-TEST_CASE("MessageQueue creator and client", "[messagequeue]") {
+TEST_CASE (
+"MessageQueue creator and client"
+,
+"[messagequeue]"
+)
+ {
     {
         MessageQueue mq_creator('B', true);
         REQUIRE(mq_creator.getMsgId() != -1);
@@ -15,7 +20,12 @@ TEST_CASE("MessageQueue creator and client", "[messagequeue]") {
     }
 }
 
-TEST_CASE("MessageQueue nowait", "[messagequeue]") {
+TEST_CASE (
+"MessageQueue nowait"
+,
+"[messagequeue]"
+)
+ {
     {
         MessageQueue mq_creator('B', true);
         REQUIRE(mq_creator.getMsgId() != -1);
@@ -26,7 +36,12 @@ TEST_CASE("MessageQueue nowait", "[messagequeue]") {
     }
 }
 
-TEST_CASE("MessageQueue send and receive struct message", "[messagequeue]") {
+TEST_CASE (
+"MessageQueue send and receive struct message"
+,
+"[messagequeue]"
+)
+ {
     MessageQueue mq('C', true);
 
     auto data = DataSOR();
@@ -44,7 +59,12 @@ TEST_CASE("MessageQueue send and receive struct message", "[messagequeue]") {
 }
 
 
-TEST_CASE("MessageQueue send and receive in reverse order by mtype", "[messagequeue]") {
+TEST_CASE (
+"MessageQueue send and receive in reverse order by mtype"
+,
+"[messagequeue]"
+)
+ {
     MessageQueue mq('A', true);
 
     int msg1 = 100;

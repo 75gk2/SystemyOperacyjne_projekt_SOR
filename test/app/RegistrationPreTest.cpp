@@ -23,7 +23,12 @@ namespace {
     }
 }
 
-TEST_CASE("Registration prioritizes VIP messages", "[registration]") {
+TEST_CASE (
+"Registration prioritizes VIP messages"
+,
+"[registration]"
+)
+ {
     ProcessManager pm;
     REQUIRE(pm.assignProcess(std::make_unique<Registration>(20)));
 
@@ -44,7 +49,12 @@ TEST_CASE("Registration prioritizes VIP messages", "[registration]") {
     REQUIRE(response.youCanHurry == false);
 }
 
-TEST_CASE("Registration window returns hurry for VIP or diesNow", "[registration]") {
+TEST_CASE (
+"Registration window returns hurry for VIP or diesNow"
+,
+"[registration]"
+)
+ {
     ProcessManager pm;
     REQUIRE(pm.assignProcess(std::make_unique<Registration>(20)));
 

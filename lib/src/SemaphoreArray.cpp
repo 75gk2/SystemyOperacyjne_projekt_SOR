@@ -46,7 +46,7 @@ SemaphoreArray::~SemaphoreArray() {
 }
 
 template<int N>
-bool SemaphoreArray::operate(struct sembuf (&sops)[N]) const{
+bool SemaphoreArray::operate(struct sembuf (&sops)[N]) const {
     if (semop(semID, sops, N) == -1) {
         spdlog::error("SemaphoreArray: operate (atomic) semop failed!");
         perror("SemaphoreArray: semop failed");
@@ -90,6 +90,7 @@ bool SemaphoreArray::setValue(SEM_TYPE semNum, const int value) const {
     }
     return true;
 }
+
 int SemaphoreArray::getValue(SEM_TYPE semNum) const {
     int result = semctl(semID, static_cast<int>(semNum), GETVAL);
 

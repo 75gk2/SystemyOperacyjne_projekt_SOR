@@ -1,5 +1,5 @@
 #pragma once
 
 void simulateManageRegistrationWindows();
-void simulateTriage();
 
+void simulateTriage();

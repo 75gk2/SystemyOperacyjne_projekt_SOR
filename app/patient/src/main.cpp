@@ -9,6 +9,7 @@
 #include <cstring>
 #include <optional>
 #include <random>
+#include <csignal>
 #include <thread>
 #include <unistd.h>
 
@@ -81,6 +82,14 @@ namespace {
     }
 }
 
+static volatile sig_atomic_t g_signal2 = 0;
+
+static void handleSignal(int signum) {
+    if (signum == SIGUSR2) {
+        g_signal2 = 1;
+    }
+}
+
 
 struct ChildState {
     pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -91,6 +100,9 @@ struct ChildState {
 
 
 void *child(void *arg) {
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, nullptr);
+
     auto childState = static_cast<ChildState *>(arg);
 
     spdlog::info("Patient(child): initialized, socialId={}", childState->socialId);
@@ -99,6 +111,7 @@ void *child(void *arg) {
     while (!childState->inDiagnose) {
         spdlog::info("Patient(child): waiting for diagnose call, socialId={}", childState->socialId);
         pthread_cond_wait(&childState->cond, &childState->lock);
+        pthread_testcancel();
     }
     pthread_mutex_unlock(&childState->lock);
 
@@ -126,6 +139,12 @@ void *child(void *arg) {
 
 
 int main(int argc, char *argv[]) {
+    struct sigaction sa{};
+    sa.sa_handler = handleSignal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGUSR2, &sa, nullptr);
+
     std::random_device rd;
     std::mt19937 rng(rd());
     MessageQueue registrationQueue(Registration::Q_REGISTRATION_ID, false);
@@ -148,216 +167,305 @@ int main(int argc, char *argv[]) {
             childState->inDiagnose = true;
             pthread_cond_signal(&childState->cond);
             pthread_mutex_unlock(&childState->lock);
+            if (g_signal2) {
+                pthread_cancel(*childThread);
+                pthread_join(*childThread, nullptr);
+                return;
+            }
             pthread_join(*childThread, nullptr);
         }
-    };
 
-    data.socialId = getpid();
-    if (argc > 2) {
-        data.isVIP = std::atoi(argv[2]) != 0;
-    } else {
-        data.isVIP = (data.socialId % 10 == 0);
-    }
-    std::strncpy(data.name, "Nazywam sie: <imie> <nazwisko>", sizeof(data.name) - 1);
-    std::strncpy(data.address, "Jakiś adres", sizeof(data.address) - 1);
-    data.phone = static_cast<short>(100 + (getpid() % 10000));
-    data.ill = randomIllness(rng);
-    if (argc > 3) {
-        data.diesNow = std::atoi(argv[3]) != 0;
-    } else {
-        data.diesNow = (data.socialId % 20 == 0);
-    }
+        const auto checkEvacuation = [&]() -> bool {
+            if (g_signal2) {
+                spdlog::warn("Patient: received SIGUSR2, shutting down");
+                cleanupChildThread();
+                return true;
+            }
+            return false;
+        };
 
-    if (argc > 4) {
-        data.isThisParentWithChildren = std::atoi(argv[4]) != 0;
-    } else {
-        data.isThisParentWithChildren = false;
-    }
-    const int charisNumber = data.isThisParentWithChildren ? 2 : 1;
+        data.socialId = getpid();
+        if (argc > 2) {
+            data.isVIP = std::atoi(argv[2]) != 0;
+        } else {
+            data.isVIP = (data.socialId % 10 == 0);
+        }
+        std::strncpy(data.name, "Nazywam sie: <imie> <nazwisko>", sizeof(data.name) - 1);
+        std::strncpy(data.address, "Jakiś adres", sizeof(data.address) - 1);
+        data.phone = static_cast<short>(100 + (getpid() % 10000));
+        data.ill = randomIllness(rng);
+        if (argc > 3) {
+            data.diesNow = std::atoi(argv[3]) != 0;
+        } else {
+            data.diesNow = (data.socialId % 20 == 0);
+        }
 
-    if (data.isThisParentWithChildren) {
-        childState.emplace();
-        childState->socialId = data.socialId;
-        pthread_create(&childThread.emplace(), nullptr, child, childState.operator->());
-    }
+        if (argc > 4) {
+            data.isThisParentWithChildren = std::atoi(argv[4]) != 0;
+        } else {
+            data.isThisParentWithChildren = false;
+        }
+        const int charisNumber = data.isThisParentWithChildren ? 2 : 1;
 
-    if (!data.isVIP) {
-        // Join registration queue - increase counter
-        if (!semaphores.pullUp(SEM_TYPE::REGISTRATION_QUEUE, 1)) {
-            spdlog::error("Patient: failed to join registration queue");
+        if (data.isThisParentWithChildren) {
+            childState.emplace();
+            childState->socialId = data.socialId;
+            pthread_create(&childThread.emplace(), nullptr, child, childState.operator->());
+        }
+
+        if (!data.isVIP) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            // Join registration queue - increase counter
+            if (!semaphores.pullUp(SEM_TYPE::REGISTRATION_QUEUE, 1)) {
+                if (checkEvacuation()) {
+                    return 0;
+                }
+                spdlog::error("Patient: failed to join registration queue");
+                cleanupChildThread();
+                return 1;
+            }
+
+            // Notify registration about joining queue
+            Registration::Q_REGISTRATION_CTRL_STRUCT joinEvent{+1};
+            if (registrationCtrl.send(joinEvent, Registration::QTYPE_REGISTRATION_CTRL) < 0) {
+                spdlog::error("Patient: failed to notify registration about queue joining");
+                cleanupChildThread();
+                return 1;
+            }
+
+            // Wait in queue to see first free window
+            Registration::Q_REGISTRATION_STRUCT registration{};
+            if (checkEvacuation()) {
+                return 0;
+            }
+            if (registrationQueue.receive(registration, Registration::Q_REGISTRATION_RECEIVE_MID, true) < 0) {
+                if (checkEvacuation()) {
+                    return 0;
+                }
+                spdlog::error("Patient: failed to receive registration window token");
+                cleanupChildThread();
+                return 1;
+            }
+
+            //Leave queue - decrease counter, but dont wait - flow doesn't allow negative counter, every client takes back own increment
+            if (!semaphores.pullDown(SEM_TYPE::REGISTRATION_QUEUE, 1)) {
+                if (checkEvacuation()) {
+                    return 0;
+                }
+                spdlog::error("Patient: failed to leave registration queue");
+                cleanupChildThread();
+                return 1;
+            }
+
+            // Notify registration about leaving queue
+            Registration::Q_REGISTRATION_CTRL_STRUCT leaveEvent{-1};
+            if (registrationCtrl.send(leaveEvent, Registration::QTYPE_REGISTRATION_CTRL) < 0) {
+                spdlog::error("Patient: failed to notify registration about queue leaveing");
+                cleanupChildThread();
+                return 1;
+            }
+
+            // Send data to my window
+            spdlog::info("Patient: assigned to registration window {}", registration.isFreeOneElseTwo ? 1 : 2);
+            if (windowIn.send(data, Registration::QTYPE_WINDOW_IN) < 0) {
+                if (checkEvacuation()) {
+                    return 0;
+                }
+                spdlog::error("Patient: failed to send registration data");
+                cleanupChildThread();
+                return 1;
+            }
+        } else {
+            // Send data to my window, but with vip mark
+            spdlog::info("Patient: VIP, skipping queue");
+            if (windowIn.send(data, Registration::QTYPE_WINDOW_IN_VIP) < 0) {
+                if (checkEvacuation()) {
+                    return 0;
+                }
+                spdlog::error("Patient: failed to send VIP registration data");
+                cleanupChildThread();
+                return 1;
+            }
+        }
+
+
+        // Response get
+        Registration::Q_WINDOW_OUT_STRUCT response{};
+        if (checkEvacuation()) {
+            return 0;
+        }
+        if (windowOut.receive(response, data.socialId, true) < 0) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to receive registration response");
             cleanupChildThread();
             return 1;
         }
 
-        // Notify registration about joining queue
-        Registration::Q_REGISTRATION_CTRL_STRUCT joinEvent{+1};
-        if (registrationCtrl.send(joinEvent, Registration::QTYPE_REGISTRATION_CTRL) < 0) {
-            spdlog::error("Patient: failed to notify registration about queue joining");
+        bool canHurry = response.youCanHurry;
+        spdlog::info("Patient: finished registration, going to waithing room, canHurry={}", canHurry);
+
+        // join waiting room (occupy seat)
+        if (checkEvacuation()) {
+            return 0;
+        }
+        if (!semaphores.pullDown(SEM_TYPE::WAITING_ROOM_QUEUE, charisNumber)) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to enter waiting room");
             cleanupChildThread();
             return 1;
         }
 
-        // Wait in queue to see first free window
-        Registration::Q_REGISTRATION_STRUCT registration{};
-        if (registrationQueue.receive(registration, Registration::Q_REGISTRATION_RECEIVE_MID, true) < 0) {
-            spdlog::error("Patient: failed to receive registration window token");
+        spdlog::info("Patient: entered waiting room", canHurry);
+
+
+        // send data to triage
+        spdlog::info("Patient: entered waiting room, waiting for triage");
+        if (checkEvacuation()) {
+            return 0;
+        }
+        if (triageIn.send(data, Triage::QTYPE_TRIAGE_IN) < 0) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to send data to triage");
             cleanupChildThread();
             return 1;
         }
 
-        //Leave queue - decrease counter, but dont wait - flow doesn't allow negative counter, every client takes back own increment
-        if (!semaphores.pullDown(SEM_TYPE::REGISTRATION_QUEUE, 1)) {
-            spdlog::error("Patient: failed to leave registration queue");
+        spdlog::info("Patient: queued to triage, and waiting for response");
+
+        //triage response
+        Triage::Q_TRIAGE_OUT_STRUCT triageResponse{};
+        if (checkEvacuation()) {
+            return 0;
+        }
+        if (triageOut.receive(triageResponse, data.socialId, true) < 0) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to receive triage response");
             cleanupChildThread();
             return 1;
         }
 
-        // Notify registration about leaving queue
-        Registration::Q_REGISTRATION_CTRL_STRUCT leaveEvent{-1};
-        if (registrationCtrl.send(leaveEvent, Registration::QTYPE_REGISTRATION_CTRL) < 0) {
-            spdlog::error("Patient: failed to notify registration about queue leaveing");
+        //response info
+        spdlog::info(
+            "Patient: triage result color={}, dismissed={}, specialist={}",
+            colorToStr(triageResponse.color),
+            triageResponse.dismissed,
+            specialistToStr(triageResponse.specialist)
+        );
+
+
+        if (triageResponse.dismissed || triageResponse.color == Patient::DISMISSED) {
+            spdlog::info("Patient: dismissed after triage, leaving");
+            if (checkEvacuation()) {
+                return 0;
+            }
+            if (!semaphores.pullUp(SEM_TYPE::WAITING_ROOM_QUEUE, charisNumber)) {
+                if (checkEvacuation()) {
+                    return 0;
+                }
+                spdlog::error("Patient: failed to leave waiting room");
+                cleanupChildThread();
+                return 1;
+            }
+            cleanupChildThread();
+            return 0;
+        }
+
+        Doctor::Q_DOCTOR_IN_STRUCT doctorRequest{data, triageResponse.color, triageResponse.specialist};
+        long priority = Doctor::priorityToType(triageResponse.specialist, triageResponse.color);
+
+        spdlog::info("Patient: waiting for doctor, priority={}, specialist={}", priority,
+                     specialistToStr(triageResponse.specialist));
+
+        if (doctorsIn.send(doctorRequest, priority) < 0) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to enqueue for doctor");
             cleanupChildThread();
             return 1;
         }
 
-        // Send data to my window
-        spdlog::info("Patient: assigned to registration window {}", registration.isFreeOneElseTwo ? 1 : 2);
-        if (windowIn.send(data, Registration::QTYPE_WINDOW_IN) < 0) {
-            spdlog::error("Patient: failed to send registration data");
+        auto getCalledIn = Doctor::Q_DOCTOR_CALLS_IN{};
+        if (checkEvacuation()) {
+            return 0;
+        }
+        if (doctorsRoom.receive(getCalledIn, data.socialId, true) < 0) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to receive doctor call");
             cleanupChildThread();
             return 1;
         }
-    } else {
-        // Send data to my window, but with vip mark
-        spdlog::info("Patient: VIP, skipping queue");
-        if (windowIn.send(data, Registration::QTYPE_WINDOW_IN_VIP) < 0) {
-            spdlog::error("Patient: failed to send VIP registration data");
+        spdlog::info("Patient: called in by doctor, going to diagnosis");
+
+        if (data.isThisParentWithChildren) {
+            if (!childState.has_value() || !childThread.has_value()) {
+                spdlog::error("Patient: child state not set");
+                Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
+                diagnose.left = true;
+                doctorsRoom.send(diagnose, data.socialId);
+                cleanupChildThread();
+                return 1;
+            }
+            pthread_mutex_lock(&childState->lock);
+            childState->inDiagnose = true;
+            pthread_cond_signal(&childState->cond); // JEDEN sygnał
+            pthread_mutex_unlock(&childState->lock);
+        } else {
+            Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
+            diagnose.left = false;
+
+            std::uniform_int_distribution<int> heartDist(60, 99);
+            std::uniform_int_distribution<int> bpDist(110, 139);
+            std::uniform_real_distribution<float> tempDist(36.5f, 42.0f);
+
+            diagnose.lifeData = Patient::LifeData{
+                heartDist(rng),
+                bpDist(rng),
+                tempDist(rng),
+            };
+            doctorsRoom.send(diagnose, data.socialId);
+        }
+
+
+        Doctor::Q_DOCTOR_OUT_STRUCT doctorResponse{};
+        if (checkEvacuation()) {
+            return 0;
+        }
+        if (doctorsRoom.receive(doctorResponse, data.socialId, true) < 0) {
+            if (checkEvacuation()) {
+                return 0;
+            }
+            spdlog::error("Patient: failed to receive doctor response");
             cleanupChildThread();
             return 1;
         }
-    }
-
-
-    // Response get
-    Registration::Q_WINDOW_OUT_STRUCT response{};
-    if (windowOut.receive(response, data.socialId, true) < 0) {
-        spdlog::error("Patient: failed to receive registration response");
-        cleanupChildThread();
-        return 1;
-    }
-
-    bool canHurry = response.youCanHurry;
-    spdlog::info("Patient: finished registration, going to waithing room, canHurry={}", canHurry);
-
-    // join waiting room (occupy seat)
-    if (!semaphores.pullDown(SEM_TYPE::WAITING_ROOM_QUEUE, charisNumber)) {
-        spdlog::error("Patient: failed to enter waiting room");
-        cleanupChildThread();
-        return 1;
-    }
-
-    spdlog::info("Patient: entered waiting room", canHurry);
-
-
-    // send data to triage
-    spdlog::info("Patient: entered waiting room, waiting for triage");
-    if (triageIn.send(data, Triage::QTYPE_TRIAGE_IN) < 0) {
-        spdlog::error("Patient: failed to send data to triage");
-        cleanupChildThread();
-        return 1;
-    }
-
-    spdlog::info("Patient: queued to triage, and waiting for response");
-
-    //triage response
-    Triage::Q_TRIAGE_OUT_STRUCT triageResponse{};
-    if (triageOut.receive(triageResponse, data.socialId, true) < 0) {
-        spdlog::error("Patient: failed to receive triage response");
-        cleanupChildThread();
-        return 1;
-    }
-
-    //response info
-    spdlog::info(
-        "Patient: triage result color={}, dismissed={}, specialist={}",
-        colorToStr(triageResponse.color),
-        triageResponse.dismissed,
-        specialistToStr(triageResponse.specialist)
-    );
-
-
-    if (triageResponse.dismissed || triageResponse.color == Patient::DISMISSED) {
-        spdlog::info("Patient: dismissed after triage, leaving");
+        //todo add second stage of doctor communication
+        if (checkEvacuation()) {
+            return 0;
+        }
         if (!semaphores.pullUp(SEM_TYPE::WAITING_ROOM_QUEUE, charisNumber)) {
+            if (checkEvacuation()) {
+                return 0;
+            }
             spdlog::error("Patient: failed to leave waiting room");
             cleanupChildThread();
             return 1;
         }
+        spdlog::info("Patient: doctor outcome={}", outcomeToStr(doctorResponse.outcome));
+
         cleanupChildThread();
+
         return 0;
     }
-
-    Doctor::Q_DOCTOR_IN_STRUCT doctorRequest{data, triageResponse.color, triageResponse.specialist};
-    long priority = Doctor::priorityToType(triageResponse.specialist, triageResponse.color);
-
-    spdlog::info("Patient: waiting for doctor, priority={}, specialist={}", priority,
-                 specialistToStr(triageResponse.specialist));
-
-    if (doctorsIn.send(doctorRequest, priority) < 0) {
-        spdlog::error("Patient: failed to enqueue for doctor");
-        cleanupChildThread();
-        return 1;
-    }
-
-    auto getCalledIn = Doctor::Q_DOCTOR_CALLS_IN{};
-    doctorsRoom.receive(getCalledIn, data.socialId, true);
-    spdlog::info("Patient: called in by doctor, going to diagnosis");
-
-    if (data.isThisParentWithChildren) {
-        if (!childState.has_value() || !childThread.has_value()) {
-            spdlog::error("Patient: child state not set");
-            Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
-            diagnose.left = true;
-            doctorsRoom.send(diagnose, data.socialId);
-            cleanupChildThread();
-            return 1;
-        }
-        pthread_mutex_lock(&childState->lock);
-        childState->inDiagnose = true;
-        pthread_cond_signal(&childState->cond); // JEDEN sygnał
-        pthread_mutex_unlock(&childState->lock);
-    } else {
-        Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
-        diagnose.left = false;
-
-        std::uniform_int_distribution<int> heartDist(60, 99);
-        std::uniform_int_distribution<int> bpDist(110, 139);
-        std::uniform_real_distribution<float> tempDist(36.5f, 42.0f);
-
-        diagnose.lifeData = Patient::LifeData{
-            heartDist(rng),
-            bpDist(rng),
-            tempDist(rng),
-        };
-        doctorsRoom.send(diagnose, data.socialId);
-    }
-
-
-    Doctor::Q_DOCTOR_OUT_STRUCT doctorResponse{};
-    if (doctorsRoom.receive(doctorResponse, data.socialId, true) < 0) {
-        spdlog::error("Patient: failed to receive doctor response");
-        cleanupChildThread();
-        return 1;
-    }
-    //todo add second stage of doctor communication
-    if (!semaphores.pullUp(SEM_TYPE::WAITING_ROOM_QUEUE, charisNumber)) {
-        spdlog::error("Patient: failed to leave waiting room");
-        cleanupChildThread();
-        return 1;
-    }
-    spdlog::info("Patient: doctor outcome={}", outcomeToStr(doctorResponse.outcome));
-
-    cleanupChildThread();
-
-    return 0;
-}
