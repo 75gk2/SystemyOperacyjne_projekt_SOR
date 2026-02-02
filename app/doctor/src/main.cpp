@@ -47,18 +47,19 @@ int main(int argc, char *argv[]) {
     }
     try {
         MessageQueue doctorIn(Doctor::QID_DOCTOR_IN, false);
-        MessageQueue doctorOut(Doctor::QID_DOCTOR_OUT, false);
+        MessageQueue doctorsRooms(Doctor::QID_DOCTORS_ROOM, false);
 
         std::mt19937 rng(static_cast<unsigned int>(
             std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+        Doctor::Q_DOCTOR_IN_STRUCT patient{};
+        const auto spec = static_cast<Triage::Specialist>(specialist);
+        const long typeRed = Doctor::priorityToType(spec, Patient::RED);
+        const long typeYellow = Doctor::priorityToType(spec, Patient::YELLOW);
+        const long typeGreen = Doctor::priorityToType(spec, Patient::GREEN);
+
 
         while (true) {
-            Doctor::Q_DOCTOR_IN_STRUCT patient{};
-            const auto spec = static_cast<Triage::Specialist>(specialist);
-            const long typeRed = Doctor::priorityToType(spec, Patient::RED);
-            const long typeYellow = Doctor::priorityToType(spec, Patient::YELLOW);
-            const long typeGreen = Doctor::priorityToType(spec, Patient::GREEN);
-
+            //accept patient by priority
             int r = doctorIn.receive(patient, typeRed, false);
             if (r == -2) {
                 r = doctorIn.receive(patient, typeYellow, false);
@@ -77,6 +78,27 @@ int main(int argc, char *argv[]) {
                 static_cast<int>(patient.color),
                 static_cast<int>(patient.specialist));
 
+            //call patient
+
+            doctorsRooms.send(Doctor::Q_DOCTOR_CALLS_IN{}, patient.basic.socialId);
+
+
+            //patient comes in and represents life data params
+            Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
+            doctorsRooms.receive(diagnose, patient.basic.socialId, true);
+
+            if (diagnose.left) {
+                spdlog::warn("Doctor: patient socialId={} left during diagnosis", patient.basic.socialId);
+                continue;
+            }
+            spdlog::info(
+                "Doctor: diagnosing patient socialId={}, heartRate={}, bloodPressure={}, bodyTemperature={}",
+                patient.basic.socialId,
+                diagnose.lifeData.heartRate,
+                diagnose.lifeData.bloodPressure,
+                diagnose.lifeData.bodyTemperature);
+
+            //diagbosing...
             if (delayMs > 0) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
             }
@@ -84,7 +106,7 @@ int main(int argc, char *argv[]) {
             Doctor::Outcome outcome = randomOutcome(rng);
             Doctor::Q_DOCTOR_OUT_STRUCT out{outcome};
 
-            if (doctorOut.send(out, patient.basic.socialId) < 0) {
+            if (doctorsRooms.send(out, patient.basic.socialId) < 0) {
                 spdlog::error("Doctor: failed to send result, socialId={}", patient.basic.socialId);
             } else {
                 spdlog::info(

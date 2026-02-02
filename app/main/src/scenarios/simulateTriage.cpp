@@ -12,7 +12,7 @@ void simulateTriage() {
     spdlog::info("MAIN: Starting Triage simulation");
     ProcessManager pm;
     MessageQueue doctorIn(Doctor::QID_DOCTOR_IN, true);
-    MessageQueue doctorOut(Doctor::QID_DOCTOR_OUT, true);
+    MessageQueue doctorOut(Doctor::QID_DOCTORS_ROOM, true);
     spdlog::info("MAIN: Assigning Registration process, result={}",
         pm.assignProcess(std::make_unique<Registration>(10)));
     spdlog::info("MAIN: Assigning Triage process, result={}",
@@ -26,7 +26,7 @@ void simulateTriage() {
     for (int i = 1; i <= 10000; i++) {
         spdlog::info("MAIN: Assigning Patient process, id={}, result={}",
         i,
-        pm.assignProcess(std::make_unique<Patient>(i, false, false)));
+        pm.assignProcess(std::make_unique<Patient>(i, false, false, true)));
     }
     spdlog::warn("MAIN: Simulation running for 60 seconds");
         (void)sleep(500);

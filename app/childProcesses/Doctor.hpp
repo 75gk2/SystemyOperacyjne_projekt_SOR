@@ -7,7 +7,7 @@
 class Doctor : public Process {
 public:
     static constexpr char QID_DOCTOR_IN = 'D';
-    static constexpr char QID_DOCTOR_OUT = 'E';
+    static constexpr char QID_DOCTORS_ROOM = 'E';
 
     static constexpr long QTYPE_DOCTOR_RED = 1;
     static constexpr long QTYPE_DOCTOR_YELLOW = 2;
@@ -26,12 +26,19 @@ public:
         Triage::Specialist specialist;
     };
 
+    struct Q_DOCTOR_CALLS_IN {};
+
+    struct Q_DOCTOR_DIAGNOSE {
+        Patient::LifeData lifeData;
+        bool left;
+    };
+
     struct Q_DOCTOR_OUT_STRUCT {
         Outcome outcome;
     };
 
     MessageQueue doctorIn;
-    MessageQueue doctorOut;
+    MessageQueue doctorsRooms;
 
     explicit Doctor(Triage::Specialist specialist, int delayMs = 0);
 
