@@ -29,7 +29,14 @@ public:
         short phone;
         Illness ill;
         bool diesNow;
+        bool isThisParentWithChildren;
     };
 
-    Patient(int index, bool isVip=false, bool allowDiesNow=true);
+    struct LifeData {
+        int heartRate;
+        int bloodPressure;
+        float bodyTemperature;
+    };
+
+    Patient(int index, bool isVip=false, bool allowDiesNow=true,bool isThisParentWithChildren=false );
 };
