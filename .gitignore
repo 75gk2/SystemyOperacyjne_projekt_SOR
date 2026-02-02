@@ -5,6 +5,7 @@ wersja_robocza.md
 drafts
 test/sor_tests-*.cmake
 docs/todos
+*.log
 
 
 # extend clion config for whole .idea
