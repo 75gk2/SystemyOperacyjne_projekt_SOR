@@ -13,7 +13,12 @@
 #include <vector>
 
 
-TEST_CASE("Registration scenario: open and close windows based on queue size", "[registration]") {
+TEST_CASE (
+"Registration scenario: open and close windows based on queue size"
+,
+"[registration]"
+)
+ {
     ProcessManager pm;
     REQUIRE(pm.assignProcess(std::make_unique<Registration>(1)));
 }

@@ -88,6 +88,7 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
     {
         std::lock_guard lock(processMutex);
         processList[pid] = std::move(process);
+        updateSharedMemoryLocked();
     }
     spdlog::debug("ProcessManager: Added process with pid={}", pid);
     return true;
@@ -97,6 +98,7 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
 void ProcessManager::removeProcess(pid_t pid) {
     std::lock_guard lock(processMutex);
     processList.erase(pid);
+    updateSharedMemoryLocked();
     spdlog::debug("ProcessManager: Removed process with pid={}", pid);
 }
 
@@ -131,7 +133,6 @@ namespace {
 }
 
 void ProcessManager::installSigintHandlerGlobally() {
-
     // Make sure that it was not installed by another ProcessManager already (case of sequential simullation)
     if (g_sigintInstalled.exchange(true)) return;
 
@@ -171,6 +172,7 @@ void ProcessManager::reaperLoop() {
                 if (it != processList.end()) {
                     printThreadSafeLog("Reaper: child process terminated", false, std::to_string(pid).c_str());
                     processList.erase(it);
+                    updateSharedMemoryLocked();
                 }
             }
         } else if (pid == 0) {
@@ -185,4 +187,34 @@ void ProcessManager::reaperLoop() {
     }
 
     printThreadSafeLog("Reaper thread for zombie cleanup stopped.", false, "");
+}
+
+void ProcessManager::updateSharedMemoryLocked() {
+    auto *data = memory.getPtr();
+    if (!data) {
+        spdlog::error("ProcessManager: SharedMemory pointer is null");
+        return;
+    }
+
+    data->lekarzePIDs.fill(0);
+    data->processPIDs.fill(0);
+    data->processCount = 0;
+
+    std::size_t doctorIndex = 0;
+    for (const auto &kv: processList) {
+        const pid_t pid = kv.first;
+        const auto *proc = kv.second.get();
+        if (!proc) {
+            continue;
+        }
+        if (proc->getProcessType() != ProcessType::REGISTRATION &&
+            proc->getProcessType() != ProcessType::TRIAGE) {
+            if (data->processCount < data->processPIDs.size()) {
+                data->processPIDs[data->processCount++] = pid;
+            }
+        }
+        if (proc->getProcessType() == ProcessType::DOCTOR && doctorIndex < data->lekarzePIDs.size()) {
+            data->lekarzePIDs[doctorIndex++] = pid;
+        }
+    }
 }

@@ -19,7 +19,6 @@ public:
 
     [[nodiscard]] int getValue(SEM_TYPE semNum) const;
 
-
 private:
     int semID;
     const int SEM_COUNT;

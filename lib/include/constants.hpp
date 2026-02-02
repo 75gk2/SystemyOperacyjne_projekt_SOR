@@ -5,7 +5,8 @@
 // #define K1 ((POCZEKALNIA_SIZE + 1) / 2 + 1)
 // #define K2 ((POCZEKALNIA_SIZE) / 3 - 1)
 
-#define LEKARZE_COUNT 3
+#define LEKARZE_COUNT 6
+#define MAX_PROCESS_PIDS 20000
 
 
 // IPC Keys
@@ -41,7 +42,6 @@ inline const char *getProcessExecPath(const ProcessType type) {
             return nullptr;
     }
 };
-
 
 
 enum class SEM_TYPE {

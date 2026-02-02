@@ -12,7 +12,7 @@ public:
 
     static constexpr char QID_TRIAGE_OUT = 'U';
 
-    enum   Specialist {
+    enum Specialist {
         CARDIOLOGIST,
         NEUROLOGIST,
         OPHTHALMOLOGIST,

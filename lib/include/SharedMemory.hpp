@@ -2,7 +2,7 @@
 #include "DataSOR.hpp"
 #include "GenericIPC.hpp"
 
-class SharedMemory:GenericIPC {
+class SharedMemory : GenericIPC {
 public:
     explicit SharedMemory(bool isCreator = false);
 

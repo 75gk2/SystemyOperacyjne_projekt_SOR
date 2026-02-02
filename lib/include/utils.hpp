@@ -6,4 +6,3 @@ struct LoggerInitializer {
 };
 
 inline LoggerInitializer loggerInit;
-

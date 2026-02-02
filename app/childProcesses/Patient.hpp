@@ -3,7 +3,6 @@
 
 class Patient : public Process {
 public:
-
     enum Illness {
         HEART_HURTS,
         HEAD_HURTS,
@@ -23,7 +22,7 @@ public:
 
     struct BasicData {
         int socialId;
-        bool isVIP ;
+        bool isVIP;
         char name[32];
         char address[64];
         short phone;
@@ -38,5 +37,5 @@ public:
         float bodyTemperature;
     };
 
-    Patient(int index, bool isVip=false, bool allowDiesNow=true,bool isThisParentWithChildren=false );
+    Patient(int index, bool isVip = false, bool allowDiesNow = true, bool isThisParentWithChildren = false);
 };

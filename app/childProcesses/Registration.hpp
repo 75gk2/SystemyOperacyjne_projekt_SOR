@@ -4,10 +4,11 @@
 #include "Process.hpp"
 #include "childProcesses/Patient.hpp"
 
-class Registration: public Process{
+class Registration : public Process {
 public:
     static constexpr char Q_REGISTRATION_ID = 'R';
     static constexpr long Q_REGISTRATION_RECEIVE_MID = 1;
+
     struct Q_REGISTRATION_STRUCT {
         bool isFreeOneElseTwo;
     };
@@ -18,12 +19,14 @@ public:
     using Q_WINDOW_STRUCT = Patient::BasicData;
 
     static constexpr char QID_WINDOW_1_OUT = 's';
+
     struct Q_WINDOW_OUT_STRUCT {
         bool youCanHurry;
     };
 
     static constexpr char QID_REGISTRATION_CTRL = 'p';
     static constexpr long QTYPE_REGISTRATION_CTRL = 1;
+
     struct Q_REGISTRATION_CTRL_STRUCT {
         int delta;
     };

@@ -1,5 +1,5 @@
 cmake -S . -B build
-cmake --build build --target main doctorProc patientProc registrationProc triageProc waitingRoomProc
+cmake --build build --target main doctorProc patientProc registrationProc triageProc waitingRoomProc directorProc
 
 if [ "$1" = "1" ]; then
 	./build/bin/main 1

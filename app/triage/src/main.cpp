@@ -84,7 +84,6 @@ int main(int argc, char *argv[]) {
             }
 
             spdlog::info("Triage: sending response with color={} where={}", color, specialist);
-
         }
     } catch (const std::exception &e) {
         spdlog::error("Triage: exception: {}", e.what());

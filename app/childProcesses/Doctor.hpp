@@ -26,7 +26,8 @@ public:
         Triage::Specialist specialist;
     };
 
-    struct Q_DOCTOR_CALLS_IN {};
+    struct Q_DOCTOR_CALLS_IN {
+    };
 
     struct Q_DOCTOR_DIAGNOSE {
         Patient::LifeData lifeData;

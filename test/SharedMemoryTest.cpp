@@ -4,7 +4,12 @@
 #include "utils.hpp"
 
 
-TEST_CASE("SharedMemory create/assign and share data ", "[sharedmemory]") {
+TEST_CASE (
+"SharedMemory create/assign and share data "
+,
+"[sharedmemory]"
+)
+ {
     SharedMemory shm{true};
 
     //assign sth

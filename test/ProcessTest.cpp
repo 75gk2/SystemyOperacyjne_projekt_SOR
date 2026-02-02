@@ -1,4 +1,3 @@
-
 #include <sys/wait.h>
 #include <stdio.h>
 #include "Process.hpp"
@@ -6,7 +5,12 @@
 #include "utils.hpp"
 #include "catch2/catch_test_macros.hpp"
 
-TEST_CASE("Process: test creation and deletion of single processs","[.]") {
+TEST_CASE (
+"Process: test creation and deletion of single processs"
+,
+"[.]"
+)
+ {
     try {
         ProcessManager pm;
         if (pm.assignProcess(std::make_unique<Process>(ProcessType::TEST))) {
@@ -20,7 +24,12 @@ TEST_CASE("Process: test creation and deletion of single processs","[.]") {
 }
 
 
-TEST_CASE("Process: create 10k and killl imidiatelly","[.]") {
+TEST_CASE (
+"Process: create 10k and killl imidiatelly"
+,
+"[.]"
+)
+ {
     try {
         const auto pm = new ProcessManager();
         for (int i = 1; i <= 10000; i++) {
@@ -40,7 +49,12 @@ TEST_CASE("Process: create 10k and killl imidiatelly","[.]") {
 }
 
 
-TEST_CASE("Process: 10k proc, then let them finish","[.]") {
+TEST_CASE (
+"Process: 10k proc, then let them finish"
+,
+"[.]"
+)
+ {
 
     try {
         ProcessManager pm;

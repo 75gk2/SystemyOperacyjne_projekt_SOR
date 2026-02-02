@@ -2,6 +2,7 @@ add_executable(main main/src/main.cpp
         main/src/scenarios/simulateWindowsReception.cpp
         main/src/scenarios/simulateTriage.cpp)
 add_executable(doctorProc doctor/src/main.cpp)
+add_executable(directorProc director/src/main.cpp)
 add_executable(patientProc patient/src/main.cpp)
 add_executable(registrationProc registration/src/main.cpp)
 add_executable(triageProc triage/src/main.cpp)
@@ -23,6 +24,7 @@ target_link_libraries(appImpl PUBLIC sorLib appHeaders)
 
 # Link headers everywhere; implementation only to main
 target_link_libraries(doctorProc PRIVATE sorLib appHeaders)
+target_link_libraries(directorProc PRIVATE sorLib appHeaders)
 target_link_libraries(patientProc PRIVATE sorLib appHeaders)
 target_link_libraries(registrationProc PRIVATE sorLib appHeaders)
 target_link_libraries(triageProc PRIVATE sorLib appHeaders)

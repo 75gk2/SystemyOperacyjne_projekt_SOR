@@ -5,7 +5,12 @@
 #include <unistd.h>
 
 #include "spdlog/spdlog.h"
-TEST_CASE("PathResolving - config test", "[pathresolving]") {
+TEST_CASE (
+"PathResolving - config test"
+,
+"[pathresolving]"
+)
+ {
     {
         for (auto process: {
                  ProcessType::DOCTOR,

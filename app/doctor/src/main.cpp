@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <csignal>
 #include <random>
 #include <thread>
 
@@ -35,7 +36,43 @@ namespace {
     }
 }
 
+static volatile sig_atomic_t g_signal1 = 0;
+static volatile sig_atomic_t g_signal2 = 0;
+
+static void handleSignal(int signum) {
+    if (signum == SIGUSR1) {
+        g_signal1 = 1;
+    } else if (signum == SIGUSR2) {
+        g_signal2 = 1;
+    }
+}
+
+static void takeBreak(std::mt19937 &rng) {
+    std::uniform_int_distribution<int> distMs(1000, 5000);
+    const int totalMs = distMs(rng);
+    spdlog::warn("Doctor: going to ward for {} ms", totalMs);
+
+    int remaining = totalMs;
+    while (remaining > 0 && !g_signal2) {
+        const int chunk = std::min(remaining, 200);
+        std::this_thread::sleep_for(std::chrono::milliseconds(chunk));
+        remaining -= chunk;
+    }
+    if (g_signal2) {
+        spdlog::warn("Doctor: received SIGUSR2 during ward break, shutting down");
+        return;
+    }
+    spdlog::warn("Doctor: returning from ward");
+}
+
 int main(int argc, char *argv[]) {
+    struct sigaction sa{};
+    sa.sa_handler = handleSignal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGUSR1, &sa, nullptr);
+    sigaction(SIGUSR2, &sa, nullptr);
+
     spdlog::info("Doctor: init");
     int delayMs = 0;
     int specialist = 0;
@@ -59,6 +96,17 @@ int main(int argc, char *argv[]) {
 
 
         while (true) {
+            if (g_signal2) {
+                spdlog::warn("Doctor: received SIGUSR2, shutting down");
+                break;
+            }
+            if (g_signal1) {
+                g_signal1 = 0;
+                takeBreak(rng);
+                if (g_signal2) {
+                    break;
+                }
+            }
             //accept patient by priority
             int r = doctorIn.receive(patient, typeRed, false);
             if (r == -2) {
@@ -68,6 +116,17 @@ int main(int argc, char *argv[]) {
                 r = doctorIn.receive(patient, typeGreen, true);
             }
             if (r < 0) {
+                if (g_signal2) {
+                    spdlog::warn("Doctor: received SIGUSR2 during receive, shutting down");
+                    break;
+                }
+                if (g_signal1) {
+                    g_signal1 = 0;
+                    takeBreak(rng);
+                    if (g_signal2) {
+                        break;
+                    }
+                }
                 spdlog::error("Doctor: failed to receive patient");
                 continue;
             }
@@ -98,7 +157,7 @@ int main(int argc, char *argv[]) {
                 diagnose.lifeData.bloodPressure,
                 diagnose.lifeData.bodyTemperature);
 
-            //diagbosing...
+            //diagnosing...
             if (delayMs > 0) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
             }
@@ -113,6 +172,18 @@ int main(int argc, char *argv[]) {
                     "Doctor: finished patient socialId={}, outcome={}",
                     patient.basic.socialId,
                     outcomeToStr(outcome));
+            }
+
+            if (g_signal2) {
+                spdlog::warn("Doctor: received SIGUSR2 after patient, shutting down");
+                break;
+            }
+            if (g_signal1) {
+                g_signal1 = 0;
+                takeBreak(rng);
+                if (g_signal2) {
+                    break;
+                }
             }
         }
     } catch (const std::exception &e) {
