@@ -1,6 +1,8 @@
 add_executable(main main/src/main.cpp
         main/src/scenarios/simulateWindowsReception.cpp
-        main/src/scenarios/simulateTriage.cpp)
+        main/src/scenarios/simulateTriage.cpp
+        main/src/scenarios/simulateNoDoctors.cpp
+)
 add_executable(doctorProc doctor/src/main.cpp)
 add_executable(directorProc director/src/main.cpp)
 add_executable(patientProc patient/src/main.cpp)
@@ -19,6 +21,7 @@ add_library(appImpl
         childProcesses/Patient.cpp
         childProcesses/Registration.cpp
         childProcesses/Doctor.cpp
+        childProcesses/Director.cpp
 )
 target_link_libraries(appImpl PUBLIC sorLib appHeaders)
 
@@ -38,5 +41,6 @@ target_compile_definitions(global_config INTERFACE
         REGISTRATION_PROC_PATH="$<TARGET_FILE:registrationProc>"
         TRIAGE_PROC_PATH="$<TARGET_FILE:triageProc>"
         WAITING_ROOM_PROC_PATH="$<TARGET_FILE:waitingRoomProc>"
+        DIRECTOR_PROC_PATH="$<TARGET_FILE:directorProc>"
 )
 target_link_libraries(main PRIVATE global_config test_config)

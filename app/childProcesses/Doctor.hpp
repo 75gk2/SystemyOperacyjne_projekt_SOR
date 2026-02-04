@@ -1,7 +1,7 @@
 #pragma once
 #include "Process.hpp"
-#include "childProcesses/Patient.hpp"
-#include "childProcesses/Triage.hpp"
+#include "Patient.hpp"
+#include "Triage.hpp"
 #include "MessageQueue.hpp"
 
 class Doctor : public Process {

@@ -20,6 +20,7 @@ enum class ProcessType {
     REGISTRATION,
     TRIAGE,
     WAITING_ROOM,
+    DIRECTOR,
     TEST,
     __COUNT_SENTINEL
 };
@@ -36,6 +37,8 @@ inline const char *getProcessExecPath(const ProcessType type) {
             return TRIAGE_PROC_PATH;
         case ProcessType::WAITING_ROOM:
             return WAITING_ROOM_PROC_PATH;
+        case ProcessType::DIRECTOR:
+            return DIRECTOR_PROC_PATH;
         case ProcessType::TEST:
             return DOOM_PATH;
         default:
