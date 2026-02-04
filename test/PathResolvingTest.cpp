@@ -18,6 +18,7 @@ TEST_CASE (
                  ProcessType::REGISTRATION,
                  ProcessType::TRIAGE,
                  ProcessType::WAITING_ROOM,
+                 ProcessType::DIRECTOR,
                  ProcessType::TEST
              }) {
             const char *path = getProcessExecPath(process);
