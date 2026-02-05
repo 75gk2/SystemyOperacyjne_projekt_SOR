@@ -155,6 +155,7 @@ int main(int argc, char *argv[]) {
     MessageQueue triageOut(Triage::QID_TRIAGE_OUT, false);
     MessageQueue doctorsIn(Doctor::QID_DOCTOR_IN, false);
     MessageQueue doctorsRoom(Doctor::QID_DOCTORS_ROOM, false);
+    MessageQueue doctorsVerdict(Doctor::QID_DOCTORS_VERDICT, false);
     SemaphoreArray semaphores(false);
 
     Patient::BasicData data{};
@@ -421,7 +422,7 @@ int main(int argc, char *argv[]) {
             }
             pthread_mutex_lock(&childState->lock);
             childState->inDiagnose = true;
-            pthread_cond_signal(&childState->cond); // JEDEN sygnał
+            pthread_cond_signal(&childState->cond);
             pthread_mutex_unlock(&childState->lock);
         } else {
             Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
@@ -444,7 +445,7 @@ int main(int argc, char *argv[]) {
         if (checkEvacuation()) {
             return 0;
         }
-        if (doctorsRoom.receive(doctorResponse, data.socialId, true) < 0) {
+        if (doctorsVerdict.receive(doctorResponse, data.socialId, true) < 0) {
             if (checkEvacuation()) {
                 return 0;
             }

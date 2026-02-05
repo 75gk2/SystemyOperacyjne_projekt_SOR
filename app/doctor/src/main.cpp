@@ -86,6 +86,7 @@ int main(int argc, char *argv[]) {
     try {
         MessageQueue doctorIn(Doctor::QID_DOCTOR_IN, false);
         MessageQueue doctorsRooms(Doctor::QID_DOCTORS_ROOM, false);
+        MessageQueue doctorsVerdict(Doctor::QID_DOCTORS_VERDICT, false);
 
         const auto sendRetryOnEintr = [&](auto &queue, const auto &msg, long mtype) -> int {
             while (true) {
@@ -98,6 +99,7 @@ int main(int argc, char *argv[]) {
                 }
                 if (errno == EINTR) {
                     // do not leave patient during visit; retry sending
+                    spdlog::warn("Doctor: send interrupted by signal, retrying");
                     continue;
                 }
                 return -1;
@@ -115,6 +117,7 @@ int main(int argc, char *argv[]) {
                 }
                 if (errno == EINTR) {
                     // do not leave patient during visit; retry receiving
+                    spdlog::warn("Doctor: receive interrupted by signal, retrying");
                     continue;
                 }
                 return -1;
@@ -224,7 +227,7 @@ int main(int argc, char *argv[]) {
                 Doctor::Outcome outcome = randomOutcome(rng);
                 Doctor::Q_DOCTOR_OUT_STRUCT out{outcome};
 
-                if (sendRetryOnEintr(doctorsRooms, out, patient.basic.socialId) < 0) {
+                if (sendRetryOnEintr(doctorsVerdict, out, patient.basic.socialId) < 0) {
                     if (g_signal2) {
                         spdlog::warn("Doctor: received SIGUSR2 while sending result, shutting down");
                         break;

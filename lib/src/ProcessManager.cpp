@@ -31,7 +31,8 @@ std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
 ProcessManager::ProcessManager() : semaphores(true),
                                    memory(true),
                                    doctorIn('D', true),
-                                   doctorsRoom('E', true) {
+                                   doctorsRoom('E', true),
+                                   doctorVerdict('F', true) {
     installSigintHandlerGlobally();
     reaperThread = std::thread(&ProcessManager::reaperLoop, this);
     spdlog::debug("ProcessManager: Reaper thread started");
