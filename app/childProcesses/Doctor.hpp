@@ -8,6 +8,7 @@ class Doctor : public Process {
 public:
     static constexpr char QID_DOCTOR_IN = 'D';
     static constexpr char QID_DOCTORS_ROOM = 'E';
+    static constexpr char QID_DOCTORS_VERDICT = 'F';
 
     static constexpr long QTYPE_DOCTOR_RED = 1;
     static constexpr long QTYPE_DOCTOR_YELLOW = 2;
@@ -40,6 +41,7 @@ public:
 
     MessageQueue doctorIn;
     MessageQueue doctorsRooms;
+    MessageQueue doctorVerdict;
 
     explicit Doctor(Triage::Specialist specialist, int delayMs = 0);
 

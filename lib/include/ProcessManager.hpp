@@ -55,5 +55,6 @@ private:
     SharedMemory memory;
     MessageQueue doctorIn;
     MessageQueue doctorsRoom;
+    MessageQueue doctorVerdict;
     
 };
