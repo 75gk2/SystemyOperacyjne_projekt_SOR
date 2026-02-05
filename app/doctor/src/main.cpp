@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <csignal>
+#include <cerrno>
 #include <random>
 #include <thread>
 
@@ -86,6 +87,40 @@ int main(int argc, char *argv[]) {
         MessageQueue doctorIn(Doctor::QID_DOCTOR_IN, false);
         MessageQueue doctorsRooms(Doctor::QID_DOCTORS_ROOM, false);
 
+        const auto sendRetryOnEintr = [&](auto &queue, const auto &msg, long mtype) -> int {
+            while (true) {
+                const int s = queue.send(msg, mtype);
+                if (s >= 0) {
+                    return s;
+                }
+                if (g_signal2) {
+                    return -1;
+                }
+                if (errno == EINTR) {
+                    // do not leave patient during visit; retry sending
+                    continue;
+                }
+                return -1;
+            }
+        };
+
+        const auto receiveDuringVisitIgnoreSigusr1 = [&](auto &queue, auto &msg, long mtype) -> int {
+            while (true) {
+                const int r = queue.receive(msg, mtype, true);
+                if (r >= 0) {
+                    return r;
+                }
+                if (g_signal2) {
+                    return -1;
+                }
+                if (errno == EINTR) {
+                    // do not leave patient during visit; retry receiving
+                    continue;
+                }
+                return -1;
+            }
+        };
+
         std::mt19937 rng(static_cast<unsigned int>(
             std::chrono::high_resolution_clock::now().time_since_epoch().count()));
         Doctor::Q_DOCTOR_IN_STRUCT patient{};
@@ -127,6 +162,10 @@ int main(int argc, char *argv[]) {
                         break;
                     }
                 }
+                if (errno == EINTR) {
+                    // Interrupted by a signal; Recheck signals (1|2)
+                    continue;
+                }
                 spdlog::error("Doctor: failed to receive patient");
                 continue;
             }
@@ -137,41 +176,66 @@ int main(int argc, char *argv[]) {
                 static_cast<int>(patient.color),
                 static_cast<int>(patient.specialist));
 
-            //call patient
+            // call patient
+            if (sendRetryOnEintr(doctorsRooms, Doctor::Q_DOCTOR_CALLS_IN{}, patient.basic.socialId) < 0) {
+                if (g_signal2) {
+                    spdlog::warn("Doctor: received SIGUSR2 while calling patient, shutting down");
+                    break;
+                }
+                spdlog::error("Doctor: failed to call patient, socialId={}", patient.basic.socialId);
+                continue;
+            }
 
-            doctorsRooms.send(Doctor::Q_DOCTOR_CALLS_IN{}, patient.basic.socialId);
-
-
-            //patient comes in and represents life data params
+            // patient comes in and represents life data params
             Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
-            doctorsRooms.receive(diagnose, patient.basic.socialId, true);
+            if (receiveDuringVisitIgnoreSigusr1(doctorsRooms, diagnose, patient.basic.socialId) < 0) {
+                if (g_signal2) {
+                    spdlog::warn("Doctor: received SIGUSR2 while waiting for diagnosis, shutting down");
+                    break;
+                }
+                spdlog::warn("Doctor: failed to receive diagnosis, socialId={}", patient.basic.socialId);
+                continue;
+            }
 
             if (diagnose.left) {
                 spdlog::warn("Doctor: patient socialId={} left during diagnosis", patient.basic.socialId);
-                continue;
-            }
-            spdlog::info(
-                "Doctor: diagnosing patient socialId={}, heartRate={}, bloodPressure={}, bodyTemperature={}",
-                patient.basic.socialId,
-                diagnose.lifeData.heartRate,
-                diagnose.lifeData.bloodPressure,
-                diagnose.lifeData.bodyTemperature);
-
-            //diagnosing...
-            if (delayMs > 0) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
-            }
-
-            Doctor::Outcome outcome = randomOutcome(rng);
-            Doctor::Q_DOCTOR_OUT_STRUCT out{outcome};
-
-            if (doctorsRooms.send(out, patient.basic.socialId) < 0) {
-                spdlog::error("Doctor: failed to send result, socialId={}", patient.basic.socialId);
             } else {
                 spdlog::info(
-                    "Doctor: finished patient socialId={}, outcome={}",
+                    "Doctor: diagnosing patient socialId={}, heartRate={}, bloodPressure={}, bodyTemperature={}.",
                     patient.basic.socialId,
-                    outcomeToStr(outcome));
+                    diagnose.lifeData.heartRate,
+                    diagnose.lifeData.bloodPressure,
+                    diagnose.lifeData.bodyTemperature);
+
+                // diagnosing...
+                if (delayMs > 0) {
+                    int remaining = delayMs;
+                    while (remaining > 0 && !g_signal2) {
+                        const int chunk = std::min(remaining, 200);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(chunk));
+                        remaining -= chunk;
+                    }
+                    if (g_signal2) {
+                        spdlog::warn("Doctor: received SIGUSR2 during diagnose, shutting down");
+                        break;
+                    }
+                }
+
+                Doctor::Outcome outcome = randomOutcome(rng);
+                Doctor::Q_DOCTOR_OUT_STRUCT out{outcome};
+
+                if (sendRetryOnEintr(doctorsRooms, out, patient.basic.socialId) < 0) {
+                    if (g_signal2) {
+                        spdlog::warn("Doctor: received SIGUSR2 while sending result, shutting down");
+                        break;
+                    }
+                    spdlog::error("Doctor: failed to send result, socialId={}", patient.basic.socialId);
+                } else {
+                    spdlog::info(
+                        "Doctor: finished patient socialId={}, outcome={}",
+                        patient.basic.socialId,
+                        outcomeToStr(outcome));
+                }
             }
 
             if (g_signal2) {

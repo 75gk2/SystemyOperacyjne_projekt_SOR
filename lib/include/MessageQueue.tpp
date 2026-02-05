@@ -1,5 +1,6 @@
 #pragma once
 #include "spdlog/spdlog.h"
+#include <cerrno>
 #include <sys/msg.h>
 
 template<typename T>
@@ -17,6 +18,10 @@ int MessageQueue::send(const T &msg, long mtype) {
     int result = msgsnd(msqId, &buffer, sizeof(T), 0);
 
     if (result == -1) {
+        if (errno == EINTR) {
+            // Interrupted, exiting by design
+            return -1;
+        }
         spdlog::error("MessageQueue: msgsnd failed! queueId={}, mtype={}", queueId, mtype);
         return -1;
     }
@@ -38,6 +43,10 @@ int MessageQueue::receive(T &msg, long mtype, bool wait) {
     if (result == -1) {
         if (errno == ENOMSG && !wait) {
             return -2; // brak wiadomości
+        }
+        if (errno == EINTR) {
+            // Interrupted, exiting by design
+            return -1;
         }
         spdlog::error("MessageQueue: msgrcv failed! queueId={}, mtype={}", queueId, mtype);
         return -1;
