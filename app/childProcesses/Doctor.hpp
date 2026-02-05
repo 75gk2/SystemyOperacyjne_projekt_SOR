@@ -39,6 +39,16 @@ public:
         Outcome outcome;
     };
 
+    static constexpr long QTYPE_DIAGNOSE_OFFSET = 1000000000L;
+
+    static long callInType(int socialId) {
+        return static_cast<long>(socialId);
+    }
+
+    static long diagnoseType(int socialId) {
+        return QTYPE_DIAGNOSE_OFFSET + static_cast<long>(socialId);
+    }
+
     MessageQueue doctorIn;
     MessageQueue doctorsRooms;
     MessageQueue doctorVerdict;
