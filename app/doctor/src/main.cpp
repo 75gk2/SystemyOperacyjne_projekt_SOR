@@ -151,7 +151,11 @@ int main(int argc, char *argv[]) {
                 r = doctorIn.receive(patient, typeYellow, false);
             }
             if (r == -2) {
-                r = doctorIn.receive(patient, typeGreen, true);
+                r = doctorIn.receive(patient, typeGreen, false);
+            }
+            if (r == -2) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs/10));
+                continue;
             }
             if (r < 0) {
                 if (g_signal2) {
@@ -180,7 +184,8 @@ int main(int argc, char *argv[]) {
                 static_cast<int>(patient.specialist));
 
             // call patient
-            if (sendRetryOnEintr(doctorsRooms, Doctor::Q_DOCTOR_CALLS_IN{}, patient.basic.socialId) < 0) {
+            const long callType = Doctor::callInType(patient.basic.socialId);
+            if (sendRetryOnEintr(doctorsRooms, Doctor::Q_DOCTOR_CALLS_IN{}, callType) < 0) {
                 if (g_signal2) {
                     spdlog::warn("Doctor: received SIGUSR2 while calling patient, shutting down");
                     break;
@@ -188,10 +193,15 @@ int main(int argc, char *argv[]) {
                 spdlog::error("Doctor: failed to call patient, socialId={}", patient.basic.socialId);
                 continue;
             }
+            spdlog::debug(
+                "Doctor: called patient socialId={}, mtype={}",
+                patient.basic.socialId,
+                callType);
 
             // patient comes in and represents life data params
             Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
-            if (receiveDuringVisitIgnoreSigusr1(doctorsRooms, diagnose, patient.basic.socialId) < 0) {
+            const long diagType = Doctor::diagnoseType(patient.basic.socialId);
+            if (receiveDuringVisitIgnoreSigusr1(doctorsRooms, diagnose, diagType) < 0) {
                 if (g_signal2) {
                     spdlog::warn("Doctor: received SIGUSR2 while waiting for diagnosis, shutting down");
                     break;
@@ -199,6 +209,10 @@ int main(int argc, char *argv[]) {
                 spdlog::warn("Doctor: failed to receive diagnosis, socialId={}", patient.basic.socialId);
                 continue;
             }
+            spdlog::debug(
+                "Doctor: received diagnosis message, socialId={}, mtype={}",
+                patient.basic.socialId,
+                diagType);
 
             if (diagnose.left) {
                 spdlog::warn("Doctor: patient socialId={} left during diagnosis", patient.basic.socialId);
@@ -259,3 +273,6 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
+
+
+

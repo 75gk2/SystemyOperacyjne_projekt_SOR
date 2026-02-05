@@ -132,8 +132,12 @@ void *child(void *arg) {
 
     diagnose.left = false;
     MessageQueue doctorsRoom(Doctor::QID_DOCTORS_ROOM, false);
-    doctorsRoom.send(diagnose, childState->socialId);
-    spdlog::info("Patient(child): sent diagnosis to doctor, socialId={}", childState->socialId);
+    const long diagType = Doctor::diagnoseType(childState->socialId);
+    doctorsRoom.send(diagnose, diagType);
+    spdlog::debug(
+        "Patient(child): sent diagnosis to doctor, socialId={}, mtype={}",
+        childState->socialId,
+        diagType);
     return nullptr;
 }
 
@@ -186,7 +190,8 @@ int main(int argc, char *argv[]) {
         return false;
     };
 
-        data.socialId = getpid();
+        // auto sid_dist = std::uniform_int_distribution<int>(0, 1000000);
+        data.socialId = getpid();//+sid_dist(rng);
         if (argc > 2) {
             data.isVIP = std::atoi(argv[2]) != 0;
         } else {
@@ -401,7 +406,8 @@ int main(int argc, char *argv[]) {
         if (checkEvacuation()) {
             return 0;
         }
-        if (doctorsRoom.receive(getCalledIn, data.socialId, true) < 0) {
+        const long callType = Doctor::callInType(data.socialId);
+        if (doctorsRoom.receive(getCalledIn, callType, true) < 0) {
             if (checkEvacuation()) {
                 return 0;
             }
@@ -416,7 +422,7 @@ int main(int argc, char *argv[]) {
                 spdlog::error("Patient: child state not set");
                 Doctor::Q_DOCTOR_DIAGNOSE diagnose{};
                 diagnose.left = true;
-                doctorsRoom.send(diagnose, data.socialId);
+                doctorsRoom.send(diagnose, Doctor::diagnoseType(data.socialId));
                 cleanupChildThread();
                 return 1;
             }
@@ -437,7 +443,15 @@ int main(int argc, char *argv[]) {
                 bpDist(rng),
                 tempDist(rng),
             };
-            doctorsRoom.send(diagnose, data.socialId);
+            const long diagType = Doctor::diagnoseType(data.socialId);
+            doctorsRoom.send(diagnose, diagType);
+            spdlog::debug(
+                "Patient: sent diagnosis to doctor, socialId={}, mtype={} (heartRate={}, bloodPressure={}, bodyTemperature={})",
+                data.socialId,
+                diagType,
+                diagnose.lifeData.heartRate,
+                diagnose.lifeData.bloodPressure,
+                diagnose.lifeData.bodyTemperature);
         }
 
 
