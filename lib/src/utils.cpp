@@ -12,7 +12,7 @@ LoggerInitializer::LoggerInitializer() {
     auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("sor.log", true);
     const auto logger = std::make_shared<spdlog::logger>("console",
-                                                         spdlog::sinks_init_list{consoleSink, fileSink});
+                                                         spdlog::sinks_init_list{ consoleSink,fileSink});//consoleSink,
 
     spdlog::set_default_logger(logger);
     spdlog::set_level(spdlog::level::info);

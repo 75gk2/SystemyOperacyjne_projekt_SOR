@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <bits/stl_vector.h>
 
+#include "MessageQueue.hpp"
 #include "Process.hpp"
 #include "SemaphoreArray.hpp"
 #include "SharedMemory.hpp"
@@ -52,4 +53,7 @@ private:
 
     SemaphoreArray semaphores;
     SharedMemory memory;
+    MessageQueue doctorIn;
+    MessageQueue doctorsRoom;
+    
 };

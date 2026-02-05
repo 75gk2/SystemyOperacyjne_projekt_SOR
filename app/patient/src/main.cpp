@@ -174,15 +174,16 @@ int main(int argc, char *argv[]) {
             }
             pthread_join(*childThread, nullptr);
         }
+    };
 
-        const auto checkEvacuation = [&]() -> bool {
-            if (g_signal2) {
-                spdlog::warn("Patient: received SIGUSR2, shutting down");
-                cleanupChildThread();
-                return true;
-            }
-            return false;
-        };
+    const auto checkEvacuation = [&]() -> bool {
+        if (g_signal2) {
+            spdlog::warn("Patient: received SIGUSR2, shutting down");
+            cleanupChildThread();
+            return true;
+        }
+        return false;
+    };
 
         data.socialId = getpid();
         if (argc > 2) {
