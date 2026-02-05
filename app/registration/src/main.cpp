@@ -43,7 +43,7 @@ void *registrationWindow(void *arg) {
     bool tokenSent = false;
     SemaphoreArray semaphores(false);
     while (true) {
-        spdlog::info("Semcount={}", semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
+        spdlog::info("RegistrationWindow: Semcount={}", semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
         if (!tokenSent) {
             // guard for double continuation
             if (broadcast.send(Registration::Q_REGISTRATION_STRUCT{isOneElseTwo}) < 0) {
