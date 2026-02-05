@@ -29,7 +29,9 @@ std::vector<pid_t> ProcessManager::getPidsOfProcesses() const {
 
 
 ProcessManager::ProcessManager() : semaphores(true),
-                                   memory(true) {
+                                   memory(true),
+                                   doctorIn('D', true),
+                                   doctorsRoom('E', true) {
     installSigintHandlerGlobally();
     reaperThread = std::thread(&ProcessManager::reaperLoop, this);
     spdlog::debug("ProcessManager: Reaper thread started");
@@ -76,7 +78,6 @@ bool ProcessManager::assignProcess(std::unique_ptr<Process> process) {
             execv(process->path, argv.data());
             printThreadSafeLog("Forked process: execv failed for process", true, process->path);
             perror("Process: execv failed");
-            // TODO! : Make sure that result of this process is HANDLED by parent process to avoid zombie
             //return without calling any copied destructors
             _exit(EXIT_FAILURE);
         }
@@ -105,19 +106,22 @@ void ProcessManager::removeProcess(pid_t pid) {
 
 void ProcessManager::printThreadSafeLog(const char *msg, bool isError, const char *subProcessPath) {
     auto timeIs = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-
     tm tm{};
     localtime_r(&timeIs, &tm);
+    const char *colorStart = isError ? "\033[31m" : "";
+    const char *colorEnd = isError ? "\033[0m" : "";
     fprintf(
         isError ? stderr : stdout,
-        "↓--→[%02d:%02d:%02d] [PID %d] [%s] %s path=%s\n",
+        "%s↓--→[%02d:%02d:%02d] [PID %d] [%s] %s path=%s%s\n",
+        colorStart,
         tm.tm_hour,
         tm.tm_min,
         tm.tm_sec,
         getpid(),
         isError ? "ERROR" : "INFO",
         msg,
-        subProcessPath
+        subProcessPath,
+        colorEnd
     );
 }
 

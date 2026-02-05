@@ -4,12 +4,12 @@
 #include <random>
 #include <string>
 #include <thread>
-#include <chrono>
 
 #include "childProcesses/Registration.hpp"
 #include "childProcesses/Triage.hpp"
 #include "childProcesses/Doctor.hpp"
 #include "childProcesses/Patient.hpp"
+#include "childProcesses/Director.hpp"
 #include "ProcessManager.hpp"
 #include "scenarios/manageSimulations.hpp"
 #include "spdlog/spdlog.h"
@@ -36,8 +36,25 @@ namespace {
         return readInt(prompt + " (0/1): ", 0, 1) == 1;
     }
 
-    void runDefaultSimulation() {
+    void runTriageSimulation() {
         simulateTriage();
+    }
+
+    void runNoDoctorsSimulation() {
+        simulateNoDoctors();
+    }
+    void runRegistrationWindowsSimulation() {
+        simulateManageRegistrationWindows();
+    }
+
+    void runDirectorCommand(ProcessManager &pm, int flag) {
+        if (flag < 1 || flag > 9) {
+            spdlog::warn("MAIN: Invalid director flag={}, expected 1-9", flag);
+            return;
+        }
+        spdlog::info("MAIN: Assigning Director process (flag={}), result={}",
+                     flag,
+                     pm.assignProcess(make_unique<Director>(flag)));
     }
 
     void runCustomSimulation() {
@@ -50,8 +67,7 @@ namespace {
         const int doctorDelayMs = readInt("Opoznienie lekarzy [ms]: ", 0, 10000);
 
         ProcessManager pm;
-        MessageQueue doctorIn(Doctor::QID_DOCTOR_IN, true);
-        MessageQueue doctorOut(Doctor::QID_DOCTORS_ROOM, true);
+        ProcessManager directorManager;
 
         spdlog::info("MAIN: Assigning Registration process, result={}",
                      pm.assignProcess(make_unique<Registration>(registrationQueueSize, registrationDelayMs)));
@@ -70,10 +86,16 @@ namespace {
         while (true) {
             cout << "\n--- Custom simulation ---\n";
             cout << "1) Generuj fale pacjentow\n";
+            cout << "2) Wywolaj dyrektora (flaga 1-9)\n";
             cout << "0) Exit\n";
-            const int choice = readInt("Wybor: ", 0, 1);
+            const int choice = readInt("Wybor: ", 0, 2);
             if (choice == 0) {
                 break;
+            }
+            if (choice == 2) {
+                const int flag = readInt("Flaga dyrektora (1-9): ", 1, 9);
+                runDirectorCommand(directorManager, flag);
+                continue;
             }
 
             const int waveSize = readInt("Liczba pacjentow w fali: ", 1, 10000);
@@ -109,7 +131,7 @@ namespace {
 int main(int argc, char **argv) {
     const bool runMenu = shouldRunMenu(argc, argv);
     if (!runMenu) {
-        runDefaultSimulation();
+        runTriageSimulation();
         return 0;
     }
 
@@ -117,17 +139,23 @@ int main(int argc, char **argv) {
 
     while (true) {
         cout << "\n=== MENU ===\n";
-        cout << "1) Symulacja (domyslna)\n";
-        cout << "2) Symulacja custom (fale pacjentow)\n";
+        cout << "1) Symulacja: Triage\n";
+        cout << "2) Symulacja: Okienka rejestracji\n";
+        cout << "3) Symulacja custom (fale pacjentow)\n";
+        cout << "4) Symulacja bez doktorów\n";
         cout << "0) Exit\n";
-        const int choice = readInt("Wybor: ", 0, 2);
+        const int choice = readInt("Wybor: ", 0, 4);
         if (choice == 0) {
             break;
         }
         if (choice == 1) {
-            runDefaultSimulation();
+            runTriageSimulation();
         } else if (choice == 2) {
+            runRegistrationWindowsSimulation();
+        } else if (choice == 3) {
             runCustomSimulation();
+        }else if (choice==4){
+            runNoDoctorsSimulation();
         }
     }
 
