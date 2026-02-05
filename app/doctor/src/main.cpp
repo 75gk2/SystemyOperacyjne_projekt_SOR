@@ -151,12 +151,13 @@ int main(int argc, char *argv[]) {
                 r = doctorIn.receive(patient, typeYellow, false);
             }
             if (r == -2) {
-                r = doctorIn.receive(patient, typeGreen, false);
+                r = doctorIn.receive(patient, 0, true);
             }
             if (r == -2) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(delayMs/10));
                 continue;
             }
+            
             if (r < 0) {
                 if (g_signal2) {
                     spdlog::warn("Doctor: received SIGUSR2 during receive, shutting down");
