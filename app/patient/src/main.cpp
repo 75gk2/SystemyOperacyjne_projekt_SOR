@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
 
         // auto sid_dist = std::uniform_int_distribution<int>(0, 1000000);
         data.socialId = getpid();//+sid_dist(rng);
+        spdlog::info("Patient: starting, socialId={}", data.socialId);
         if (argc > 2) {
             data.isVIP = std::atoi(argv[2]) != 0;
         } else {
@@ -479,7 +480,7 @@ int main(int argc, char *argv[]) {
             cleanupChildThread();
             return 1;
         }
-        spdlog::info("Patient: doctor outcome={}", outcomeToStr(doctorResponse.outcome));
+        spdlog::info("Patient: doctor outcome={}, color={}", outcomeToStr(doctorResponse.outcome), colorToStr(triageResponse.color));
 
         cleanupChildThread();
 

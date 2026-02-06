@@ -5,6 +5,7 @@ add_library(sorLib STATIC
         include/SharedMemory.hpp
         src/SharedMemory.cpp
         include/utils.hpp
+        include/ProcessSafeFileSink.hpp
         include/SemaphoreArray.hpp
         include/GenericIPC.hpp
         src/GenericIPC.cpp

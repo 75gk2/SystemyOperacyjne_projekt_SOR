@@ -52,13 +52,6 @@ int main(int argc, char *argv[]) {
     try {
         MessageQueue triageIn(Triage::QID_TRIAGE_IN, false);
         MessageQueue triageOut(Triage::QID_TRIAGE_OUT, false);
-        SemaphoreArray semaphores(false);
-
-        if (!semaphores.setValue(SEM_TYPE::WAITING_ROOM_QUEUE, POCZEKALNIA_SIZE)) {
-            spdlog::error("Triage: failed to initialize WAITING_ROOM_QUEUE semaphore");
-            return 1;
-        }
-
         spdlog::info("Triage: initialized semaphore");
 
         std::mt19937 rng(static_cast<unsigned int>(
@@ -71,6 +64,10 @@ int main(int argc, char *argv[]) {
                 spdlog::error("Triage: failed to receive patient data");
                 continue;
             }
+            
+            // triageOut.send(Triage::Q_TRIAGE_OUT_STRUCT{Patient::RED,Triage::PEDIATRICIAN, false}, patient.socialId); continue;
+
+
 
             spdlog::info("Triage: received patient data, preparing response");
 

@@ -2,6 +2,7 @@
 #include <string>
 
 void simulateManageRegistrationWindows();
+void simulateFullLargeFlowNoDelay();
 
 void simulateTriage();
 
