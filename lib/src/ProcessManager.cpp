@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <spdlog/spdlog.h>
 
@@ -111,6 +112,7 @@ void ProcessManager::printThreadSafeLog(const char *msg, bool isError, const cha
     localtime_r(&timeIs, &tm);
     const char *colorStart = isError ? "\033[31m" : "";
     const char *colorEnd = isError ? "\033[0m" : "";
+
     fprintf(
         isError ? stderr : stdout,
         "%s↓--→[%02d:%02d:%02d] [PID %d] [%s] %s path=%s%s\n",

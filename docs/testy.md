@@ -27,6 +27,11 @@ Oczekiwane rezultaty: Pacjenci czerwoni zawsze obsługiwani pierwsi, potem żó�
 Suma wywołań wynosi 100%
 b) Zmierzyć czy VIP rejestruje się priorytetowo
 
+Spawn 10k pacjentów w poczekalni n=10k + triaż.
+Sleep(10)
+Spawn lekarzy
+→Przegląd logów
+
 ## Test 4: Obsługa sygnałów Dyrektora (sygnał 1 i 2)
 
 a) S=1 przetestować sytuacje gdy lekarz jest zajęty i wraca na oddział,

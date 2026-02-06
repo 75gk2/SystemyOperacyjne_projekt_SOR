@@ -43,7 +43,6 @@ void *registrationWindow(void *arg) {
     bool tokenSent = false;
     SemaphoreArray semaphores(false);
     while (true) {
-        spdlog::info("RegistrationWindow: Semcount={}", semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
         if (!tokenSent) {
             // guard for double continuation
             if (broadcast.send(Registration::Q_REGISTRATION_STRUCT{isOneElseTwo}) < 0) {
@@ -101,6 +100,7 @@ bool registrationIncreaseWindowsLock(const int n) {
     MessageQueue ctrlQueue(Registration::QID_REGISTRATION_CTRL, false);
 
     while (true) {
+        spdlog::info("RegistrationManagment: count={}", semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
         int value = semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE);
         if (value < 0) {
             spdlog::error("Registration: Failed to read REGISTRATION_QUEUE semaphore");
@@ -123,6 +123,8 @@ bool registrationDecreaseWindowsLock(const int n) {
     MessageQueue ctrlQueue(Registration::QID_REGISTRATION_CTRL, false);
 
     while (true) {
+
+        spdlog::info("RegistrationManagment: count={}", semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE));
         int value = semaphores.getValue(SEM_TYPE::REGISTRATION_QUEUE);
         if (value < 0) {
             spdlog::error("Registration: Failed to read REGISTRATION_QUEUE semaphore");
@@ -147,6 +149,7 @@ typedef struct {
     SemaphoreArray *semaphores;
     pthread_cond_t *feedbackCond;
 } ThreadData;
+
 
 bool registrationWindowsController(const int n) {
     SemaphoreArray semaphores = SemaphoreArray(false);
@@ -232,15 +235,22 @@ bool registrationWindowsController(const int n) {
 int main(int argc, char *argv[]) {
     spdlog::info("Registration: init");
     int n = POCZEKALNIA_SIZE;
+
     if (argc > 1) {
         n = std::max(1, std::atoi(argv[1]));
     }
     if (argc > 2) {
         g_delayMs.store(std::max(0, std::atoi(argv[2])));
     }
+    
+    SemaphoreArray semaphores(false);
+    if (!semaphores.setValue(SEM_TYPE::WAITING_ROOM_QUEUE, n)) {
+        spdlog::error("Registration: failed to initialize WAITING_ROOM_QUEUE semaphore");
+        return 1;
+    }
+    
     try {
         MessageQueue registrationCtrl(Registration::QID_REGISTRATION_CTRL, false);
-        SemaphoreArray semaphores(false);
         if (!semaphores.setValue(SEM_TYPE::REGISTRATION_QUEUE, 0)) {
             spdlog::error("Registration: failed to initialize REGISTRATION_QUEUE semaphore");
             return 1;
