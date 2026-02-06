@@ -208,9 +208,10 @@ Plik: [app/doctor/src/main.cpp](app/doctor/src/main.cpp)
 
 ## 5. Testy (4)
 
-### Test: Statystyki triażu i kolejność ich obsłużenia przez lekarzy.
+### 1 Test: Statystyki triażu i kolejność ich obsłużenia przez lekarzy.
 
-([Plik testu](app/main/src/scenarios/simulateNoDoctors.cpp))
+
+([Nr w menu: 4](app/main/src/scenarios/simulateNoDoctors.cpp))
 
 Test polega na spawnie 10.000 pacjentów i poczekalni o równym rozmiarze.
 Następnie czekam na wszystkich aż przejdą przez rejestrację, i dopiero wtedy następuje uruchomienie lekarzy.
@@ -271,9 +272,9 @@ grep -c 'Patient: doctor outcome=unknown' sor.log
 | unknown  |         0 |       0,00% | 0%    |
 | **Suma** | **9 517** | **100,00%** | 100%  |
 
-### Test z 50k pacjentów działający bez sleepów - same busy waity.
+### Test z 50.000 pacjentów działający bez opóźnień w wykonywaniu ( lawinowa symulacja)
 
-[Plik testu](app/main/src/scenarios/simulateFullLargeFlowNoDelay.cpp)
+[Nr w menu: 5](app/main/src/scenarios/simulateFullLargeFlowNoDelay.cpp)
 Gotowy schemat znajduje się w liście symulacji.
 
 Założenia: 50.000 pacjentów. Pojemność poczekalni również 50.000
@@ -317,7 +318,7 @@ To znaczy że wszyscy pacjenci pomyslnie zostali obsłużeni na bardzo dużej gr
 
 ### Test mechaniki okienek rejestracji
 
-[Plik testu](app/main/src/scenarios/simulateWindowsReception.cpp)
+[Nr w menu: 3](app/main/src/scenarios/simulateWindowsReception.cpp)
 
 Założenia:
 Operacje na okienkach. Jeśli w kolejce do rejestracji jest:
@@ -425,7 +426,7 @@ cat registration.log | grep RegistrationWindow -C 3
 ```
 
 ### Test: wszyscy pacjeńci do jednego doktora z czerwonym priorytetem (1000)
-
+[Nr w menu: 2](app/main/src/scenarios/simulateTriage.cpp)
 Test polegał na uruchomieniu 1000 pacjentów dla jednego lekarza z priorytetem wysokim i porównanie logów wyjściowych - powinny się pokrywać.
 
 Został uruchomiony z dużą pojemnością poczekalni i bez pacjentów VIP. Tym sposobem unikamy asynchronicznego przydzielania kolejności.
