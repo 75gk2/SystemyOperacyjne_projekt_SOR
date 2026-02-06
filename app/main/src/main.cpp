@@ -20,6 +20,7 @@ namespace {
         return false;
     }
 }
+
 int main(int argc, char **argv) {
     try {
         const bool runMenu = shouldRunMenu(argc, argv);
@@ -33,11 +34,11 @@ int main(int argc, char **argv) {
         while (true) {
             cout << "\n=== MENU ===\n";
             cout << "1) Symulacja własna\n";
-            cout << "2) Symulacja: Triage\n";
+            cout << "2) Symulacja: Test sekwencji - wymaga modyfikacji\n";
             cout << "3) Symulacja: Okienka rejestracji\n";
-            cout << "4) Symulacja bez doktorów\n";
-            cout << "5) Symulacja 50k bez sleepów (na busy waitach)\n";
-            cout << "5) Symulacja domyślna\n";
+            cout << "4) Symulacja początkowo bez doktorów\n";
+            cout << "5) Symulacja 50k (instant)\n";
+            cout << "6) Symulacja domyślna\n";
             cout << "0) Exit\n";
 
             switch (readInt("Scenariusz: ", 0, 6)) {
