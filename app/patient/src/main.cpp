@@ -7,6 +7,8 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cerrno>
+#include <cstdio>
 #include <optional>
 #include <random>
 #include <csignal>
@@ -147,7 +149,10 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = handleSignal;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    sigaction(SIGUSR2, &sa, nullptr);
+    if (sigaction(SIGUSR2, &sa, nullptr) == -1) {
+        spdlog::error("Patient: sigaction(SIGUSR2) failed, errno={}", errno);
+        perror("Patient: sigaction(SIGUSR2) failed");
+    }
 
     std::random_device rd;
     std::mt19937 rng(rd());
