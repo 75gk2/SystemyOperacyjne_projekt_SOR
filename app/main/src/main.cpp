@@ -8,8 +8,6 @@
 using namespace std;
 
 
-void defaultSimulation() { simulateTriage(); }
-
 namespace {
     bool shouldRunMenu(int argc, char **argv) {
         if (argc <= 1) {
@@ -26,7 +24,7 @@ int main(int argc, char **argv) {
     try {
         const bool runMenu = shouldRunMenu(argc, argv);
         if (!runMenu) {
-            defaultSimulation();
+            simulateDefault();
             return 0;
         }
 
@@ -39,9 +37,10 @@ int main(int argc, char **argv) {
             cout << "3) Symulacja: Okienka rejestracji\n";
             cout << "4) Symulacja bez doktorów\n";
             cout << "5) Symulacja 50k bez sleepów (na busy waitach)\n";
+            cout << "5) Symulacja domyślna\n";
             cout << "0) Exit\n";
 
-            switch (readInt("Scenariusz: ", 0, 5)) {
+            switch (readInt("Scenariusz: ", 0, 6)) {
                 case 0:
                     return 0;
                 case 1:
@@ -58,6 +57,9 @@ int main(int argc, char **argv) {
                     break;
                 case 5:
                     simulateFullLargeFlowNoDelay();
+                    break;
+                case 6:
+                    simulateDefault();
                     break;
                 default:
                     cout << "Nieprawidlowy wybor. Sprobuj ponownie.\n";

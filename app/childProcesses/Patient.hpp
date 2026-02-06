@@ -37,5 +37,5 @@ public:
         float bodyTemperature;
     };
 
-    Patient(int index, bool isVip = false, bool allowDiesNow = false, bool isThisParentWithChildren = false);
+    Patient(int index =0, bool isVip = false, bool allowDiesNow = false, bool isThisParentWithChildren = false);
 };

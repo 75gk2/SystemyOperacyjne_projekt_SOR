@@ -4,6 +4,7 @@ add_executable(main main/src/main.cpp
         main/src/scenarios/simulateNoDoctors.cpp
         main/src/scenarios/customSimulation.cpp
         main/src/scenarios/simulateFullLargeFlowNoDelay.cpp
+        main/src/scenarios/simulateDefault.cpp
 )
 add_executable(doctorProc doctor/src/main.cpp)
 add_executable(directorProc director/src/main.cpp)

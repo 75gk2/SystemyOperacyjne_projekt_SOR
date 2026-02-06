@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
                 r = doctorIn.receive(patient, typeYellow, false);
             }
             if (r == -2) {
-                r = doctorIn.receive(patient, 0, true);
+                r = doctorIn.receive(patient, typeGreen, false);
             }
             if (r == -2) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(delayMs/10));
