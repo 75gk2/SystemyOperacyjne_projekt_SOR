@@ -1,6 +1,8 @@
 ﻿#include "SharedMemory.hpp"
 
+#include <cerrno>
 #include <csignal>
+#include <cstdio>
 #include <unordered_set>
 #include <unistd.h>
 
@@ -14,7 +16,8 @@ namespace {
         }
 
         if (kill(pid, sig) == -1) {
-            spdlog::warn("Director: failed to signal pid={} sig={}", pid, sig);
+            spdlog::warn("Director: failed to signal pid={} sig={} errno={}", pid, sig, errno);
+            perror("Director: kill failed");
         }
     }
 }

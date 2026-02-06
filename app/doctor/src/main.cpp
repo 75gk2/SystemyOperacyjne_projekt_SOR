@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <csignal>
 #include <cerrno>
+#include <cstdio>
 #include <random>
 #include <thread>
 
@@ -71,8 +72,14 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = handleSignal;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    sigaction(SIGUSR1, &sa, nullptr);
-    sigaction(SIGUSR2, &sa, nullptr);
+    if (sigaction(SIGUSR1, &sa, nullptr) == -1) {
+        spdlog::error("Doctor: sigaction(SIGUSR1) failed, errno={}", errno);
+        perror("Doctor: sigaction(SIGUSR1) failed");
+    }
+    if (sigaction(SIGUSR2, &sa, nullptr) == -1) {
+        spdlog::error("Doctor: sigaction(SIGUSR2) failed, errno={}", errno);
+        perror("Doctor: sigaction(SIGUSR2) failed");
+    }
 
     spdlog::info("Doctor: init");
     int delayMs = 0;
